@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ translations['zh-Hant']['app.title'] }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="shell">
+      <div class="topbar">
+        <div class="language-picker" aria-label="Language selector">
+          <span data-i18n="lang.label">{{ translations['zh-Hant']['lang.label'] }}</span>
+          <div class="language-buttons" id="language-buttons">
+            <button type="button" class="language-button" data-language="zh-Hant">{{ translations['zh-Hant']['lang.zh-Hant'] }}</button>
+            <button type="button" class="language-button" data-language="zh-Hans">{{ translations['zh-Hant']['lang.zh-Hans'] }}</button>
+            <button type="button" class="language-button" data-language="en">{{ translations['zh-Hant']['lang.en'] }}</button>
+            <button type="button" class="language-button" data-language="ja">{{ translations['zh-Hant']['lang.ja'] }}</button>
+          </div>
+        </div>
+      </div>
+      <section class="hero">
+        <p class="eyebrow" data-i18n="hero.eyebrow">{{ translations['zh-Hant']['hero.eyebrow'] }}</p>
+        <h1 data-i18n="hero.title">{{ translations['zh-Hant']['hero.title'] }}</h1>
+        <p class="intro" data-i18n="hero.intro">{{ translations['zh-Hant']['hero.intro'] }}</p>
+
+        <div class="status-grid">
+          <article class="status-card {{ 'ready' if yt_dlp_ready else 'missing' }}">
+            <span class="status-label" data-i18n="status.ytdlp">{{ translations['zh-Hant']['status.ytdlp'] }}</span>
+            <strong data-i18n="{{ 'status.ready' if yt_dlp_ready else 'status.missing' }}">
+              {{ translations['zh-Hant']['status.ready'] if yt_dlp_ready else translations['zh-Hant']['status.missing'] }}
+            </strong>
+          </article>
+          <article class="status-card {{ 'ready' if ffmpeg_ready else 'missing' }}">
+            <span class="status-label" data-i18n="status.ffmpeg">{{ translations['zh-Hant']['status.ffmpeg'] }}</span>
+            <strong data-i18n="{{ 'status.ready' if ffmpeg_ready else 'status.optional' }}">
+              {{ translations['zh-Hant']['status.ready'] if ffmpeg_ready else translations['zh-Hant']['status.optional'] }}
+            </strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel">
+        <form class="download-form" id="download-form">
+          <label for="url" data-i18n="form.url">{{ translations['zh-Hant']['form.url'] }}</label>
+          <div class="field-row">
+            <input
+              id="url"
+              name="url"
+              type="url"
+              placeholder="{{ translations['zh-Hant']['form.url_placeholder'] }}"
+              data-i18n-placeholder="form.url_placeholder"
+              required
+            />
+            <button type="submit" id="submit-button" data-i18n="form.submit">{{ translations['zh-Hant']['form.submit'] }}</button>
+          </div>
+          <div class="field-stack">
+            <label for="quality" data-i18n="form.quality">{{ translations['zh-Hant']['form.quality'] }}</label>
+            <select id="quality" name="quality">
+              {% for key, option in quality_options.items() %}
+              <option value="{{ key }}" {{ 'selected' if key == 'best' else '' }}>
+                {{ translations['zh-Hant'][option.label_key] }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </form>
+
+        <p class="tip" data-i18n="tip.copyright">{{ translations['zh-Hant']['tip.copyright'] }}</p>
+
+        <section class="progress-panel hidden" id="progress-panel">
+          <div class="progress-header">
+            <p class="progress-kicker" data-i18n="progress.kicker">{{ translations['zh-Hant']['progress.kicker'] }}</p>
+            <strong id="progress-percent">0%</strong>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+          <p class="progress-status" id="progress-status" data-i18n="progress.waiting">{{ translations['zh-Hant']['progress.waiting'] }}</p>
+        </section>
+
+        <div class="message error hidden" id="error-box"></div>
+
+        <div class="message success hidden" id="result-box">
+          <p><strong data-i18n="result.completed">{{ translations['zh-Hant']['result.completed'] }}</strong><span id="result-title"></span></p>
+          <p class="result-meta"><strong data-i18n="result.quality">{{ translations['zh-Hant']['result.quality'] }}</strong><span id="result-quality"></span></p>
+          <p class="warning hidden" id="result-warning"></p>
+          <a class="download-link" id="download-link" href="#" data-i18n="result.download">{{ translations['zh-Hant']['result.download'] }}</a>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const translations = {{ translations | tojson }};
+      const fallbackLocale = "zh-Hant";
+      const form = document.getElementById("download-form");
+      const languageButtons = Array.from(document.querySelectorAll(".language-button"));
+      const submitButton = document.getElementById("submit-button");
+      const progressPanel = document.getElementById("progress-panel");
+      const progressBar = document.getElementById("progress-bar");
+      const progressPercent = document.getElementById("progress-percent");
+      const progressStatus = document.getElementById("progress-status");
+      const errorBox = document.getElementById("error-box");
+      const resultBox = document.getElementById("result-box");
+      const resultTitle = document.getElementById("result-title");
+      const resultQuality = document.getElementById("result-quality");
+      const resultWarning = document.getElementById("result-warning");
+      const downloadLink = document.getElementById("download-link");
+      const qualityLabelMap = {{ quality_options | tojson }};
+
+      let pollTimer = null;
+      let currentLocale = localStorage.getItem("ytmp4_locale") || fallbackLocale;
+
+      function t(key, fallback = "") {
+        return translations[currentLocale]?.[key] || translations[fallbackLocale]?.[key] || fallback || key;
+      }
+
+      function localizeError(data) {
+        return data?.error_key ? t(data.error_key, data.error || "") : (data?.error || t("error.download_failed"));
+      }
+
+      function localizeWarningKeys(keys) {
+        if (!Array.isArray(keys) || !keys.length) {
+          return "";
+        }
+        return keys.map((key) => t(key)).join(" ");
+      }
+
+      function applyTranslations() {
+        document.documentElement.lang = currentLocale;
+        document.title = t("app.title");
+        document.querySelectorAll("[data-i18n]").forEach((node) => {
+          node.textContent = t(node.dataset.i18n, node.textContent);
+        });
+        document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+          node.placeholder = t(node.dataset.i18nPlaceholder, node.placeholder);
+        });
+        Array.from(document.getElementById("quality").options).forEach((option) => {
+          const key = option.value;
+          const labelKey = qualityLabelMap[key]?.label_key;
+          if (labelKey) {
+            option.textContent = t(labelKey, option.textContent);
+          }
+        });
+        languageButtons.forEach((button) => {
+          const language = button.dataset.language;
+          button.textContent = t(`lang.${language}`, button.textContent);
+          button.classList.toggle("active", language === currentLocale);
+        });
+      }
+
+      function showError(message) {
+        errorBox.textContent = message;
+        errorBox.classList.remove("hidden");
+      }
+
+      function hideError() {
+        errorBox.textContent = "";
+        errorBox.classList.add("hidden");
+      }
+
+      function hideResult() {
+        resultBox.classList.add("hidden");
+        resultTitle.textContent = "";
+        resultQuality.textContent = "";
+        resultWarning.textContent = "";
+        resultWarning.classList.add("hidden");
+        downloadLink.href = "#";
+      }
+
+      function updateProgress(progress, statusText) {
+        const safeProgress = Math.max(0, Math.min(100, Number(progress) || 0));
+        progressPanel.classList.remove("hidden");
+        progressBar.style.width = `${safeProgress}%`;
+        progressPercent.textContent = `${safeProgress.toFixed(1)}%`;
+        progressStatus.textContent = statusText || t("progress.processing");
+      }
+
+      async function pollJob(jobId) {
+        const response = await fetch(`/api/jobs/${jobId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(localizeError(data));
+        }
+
+        const translatedStatus = data.status_key ? t(data.status_key) : data.status_text;
+        updateProgress(data.progress, translatedStatus || data.status_text);
+
+        if (data.status === "completed") {
+          submitButton.disabled = false;
+          clearInterval(pollTimer);
+          resultTitle.textContent = data.title || data.filename || "影片";
+          resultQuality.textContent = t(qualityLabelMap[data.quality]?.label_key || "", data.quality || "");
+          downloadLink.href = data.download_url;
+          const warningText = localizeWarningKeys(data.warning_keys) || data.warning || "";
+          if (warningText) {
+            resultWarning.textContent = warningText;
+            resultWarning.classList.remove("hidden");
+          }
+          resultBox.classList.remove("hidden");
+        }
+
+        if (data.status === "error") {
+          submitButton.disabled = false;
+          clearInterval(pollTimer);
+          showError(localizeError(data));
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        clearInterval(pollTimer);
+        hideError();
+        hideResult();
+        updateProgress(0, t("progress.creating_job"));
+        submitButton.disabled = true;
+
+        const formData = new FormData(form);
+        const payload = {
+          url: formData.get("url"),
+          quality: formData.get("quality"),
+        };
+
+        try {
+          const response = await fetch("/api/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(localizeError(data));
+          }
+
+          pollTimer = setInterval(() => {
+            pollJob(data.job_id).catch((error) => {
+              clearInterval(pollTimer);
+              submitButton.disabled = false;
+              showError(error.message || t("error.fetch_status"));
+            });
+          }, 1000);
+
+          await pollJob(data.job_id);
+        } catch (error) {
+          submitButton.disabled = false;
+          showError(error.message || t("error.download_failed"));
+        }
+      });
+
+      currentLocale = translations[currentLocale] ? currentLocale : fallbackLocale;
+      applyTranslations();
+      languageButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          currentLocale = button.dataset.language;
+          localStorage.setItem("ytmp4_locale", currentLocale);
+          applyTranslations();
+        });
+      });
+    </script>
+  </body>
+</html>
