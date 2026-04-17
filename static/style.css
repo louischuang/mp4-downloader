@@ -311,6 +311,42 @@ h1 {
   font-weight: 700;
 }
 
+.input-tabs {
+  display: flex;
+  width: fit-content;
+  gap: 10px;
+  margin-bottom: 22px;
+  margin-left: auto;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(143, 195, 255, 0.06);
+  backdrop-filter: blur(16px);
+}
+
+.input-tab {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 999px;
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+}
+
+.input-tab.active {
+  color: #04111e;
+  background: linear-gradient(135deg, #a8ddff 0%, #68b7ff 52%, #4c89ff 100%);
+  box-shadow: 0 14px 30px rgba(54, 123, 255, 0.22);
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
 .field-stack {
   margin-top: 16px;
 }
@@ -339,6 +375,20 @@ select {
   background: rgba(150, 194, 255, 0.08);
   backdrop-filter: blur(12px);
   transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+input[type="file"] {
+  padding: 16px 18px;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 14px;
+  padding: 10px 14px;
+  border: 1px solid rgba(173, 212, 255, 0.16);
+  border-radius: 14px;
+  color: var(--ink);
+  background: rgba(143, 195, 255, 0.12);
+  cursor: pointer;
 }
 
 input::placeholder {
@@ -941,6 +991,15 @@ button:hover::before,
 
   .field-row {
     flex-direction: column;
+  }
+
+  .input-tabs {
+    display: flex;
+    width: 100%;
+  }
+
+  .input-tab {
+    flex: 1 1 0;
   }
 
   .section-head,

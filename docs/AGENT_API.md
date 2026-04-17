@@ -67,6 +67,23 @@ When completed, `filename` and `download_url` are included.
 
 Lists all downloaded MP4 files and transcript artifacts.
 
+### `POST /api/v1/uploads`
+
+Uploads a local MP4 file and starts transcription automatically.
+
+Multipart form fields:
+
+- `title`
+- `file`
+- `model`
+
+Response includes:
+
+- uploaded `filename`
+- `title`
+- `transcription_job_id`
+- `video` metadata snapshot
+
 ### `POST /api/v1/transcriptions`
 
 Request:
@@ -135,6 +152,7 @@ What it validates:
 3. Submit `POST /api/v1/downloads`
 4. Poll `GET /api/v1/jobs/{job_id}`
 5. After completion, optionally submit `POST /api/v1/transcriptions`
-6. Poll `GET /api/v1/transcriptions/{job_id}`
+6. Or upload an MP4 with `POST /api/v1/uploads`
+7. Poll `GET /api/v1/transcriptions/{job_id}`
 
 This structure keeps the HTTP API simple and stable while letting the CLI provide a higher-level automation experience for agents.

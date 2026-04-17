@@ -21,6 +21,9 @@
 - 支持 YouTube `watch`、`youtu.be`、`shorts`、`embed` 链接
 - 可选择下载画质：`最佳可用画质`、`1080p`、`720p`、`360p`
 - 可使用 `开始下载` 或 `下载与转成文字`
+- 可切换 `YouTube 下载` 与 `上传 MP4` 标签
+- 可上传本地 MP4 并自定义视频标题
+- 上传完成后会自动开始进行转文字
 - 下载与转录时可看到实时进度与状态文字
 - 可播放本地 MP4、打开原始 YouTube 页面、下载生成文件
 - 支持本机 `faster-whisper` 转文字，输出 `txt`、`srt`、`vtt`、`json`
@@ -139,6 +142,7 @@ Docker 会将这个文件挂载到：
 - `GET /api/health`
 - `GET /api/capabilities`
 - `POST /api/v1/downloads`
+- `POST /api/v1/uploads`
 - `GET /api/v1/jobs/{job_id}`
 - `GET /api/v1/videos`
 - `POST /api/v1/transcriptions`
@@ -224,12 +228,13 @@ brew install ffmpeg
 ## 使用方式
 
 1. 在浏览器打开服务页面。
-2. 粘贴 YouTube 视频链接。
-3. 选择你要的画质。
-4. 点击 `开始下载` 或 `下载与转成文字`。
-5. 在页面上查看实时进度与状态文字。
-6. 如果启用了转文字，下载完成后会自动接续 STT 作业。
-7. 完成后可在影片列表中播放视频、打开原始链接、下载 MP4，或下载 `txt` / `srt` / `vtt` / `json`。
+2. 选择 `YouTube 下载` 或 `上传 MP4`。
+3. 若使用 YouTube 模式，粘贴视频链接并选择画质。
+4. 若使用上传模式，选择本地 MP4 并输入视频标题。
+5. 点击当前模式的主要按钮。
+6. 在页面上查看实时下载或转录进度。
+7. 如果启用了转文字，或是使用 MP4 上传模式，完成后会自动接续 STT 作业。
+8. 完成后可在影片列表中播放视频、打开原始链接、下载 MP4，或下载 `txt` / `srt` / `vtt` / `json`。
 
 ## 补充说明
 

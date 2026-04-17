@@ -21,6 +21,9 @@ A local web app and agent-friendly API for downloading YouTube videos, convertin
 - Paste a YouTube `watch`, `youtu.be`, `shorts`, or `embed` URL
 - Choose output quality: `Best`, `1080p`, `720p`, or `360p`
 - Start `Download` or `Download And Transcribe`
+- Switch between YouTube download and local MP4 upload tabs
+- Upload a local MP4 with a custom title
+- Start transcription automatically after upload finishes
 - See live status while downloading or transcribing
 - Play local MP4 files, open the original YouTube page, and download generated files
 - Generate `txt`, `srt`, `vtt`, and `json` transcript outputs
@@ -138,6 +141,7 @@ The project includes an agent-friendly HTTP API:
 - `GET /api/health`
 - `GET /api/capabilities`
 - `POST /api/v1/downloads`
+- `POST /api/v1/uploads`
 - `GET /api/v1/jobs/{job_id}`
 - `GET /api/v1/videos`
 - `POST /api/v1/transcriptions`
@@ -223,12 +227,13 @@ brew install ffmpeg
 ## Usage
 
 1. Open the app in your browser.
-2. Paste a YouTube video URL.
-3. Choose your preferred quality.
-4. Click `Download` or `Download And Transcribe`.
-5. Watch the live progress bar and status text.
-6. If you enabled transcription, the STT job starts automatically after download.
-7. From the video list, you can play the video, open the original URL, download MP4, or download `txt` / `srt` / `vtt` / `json`.
+2. Choose `YouTube Download` or `Upload MP4`.
+3. For YouTube mode, paste a YouTube video URL and choose your preferred quality.
+4. For upload mode, choose a local MP4 file and enter a custom video title.
+5. Click the main action button for the selected mode.
+6. Watch the live progress bar and status text.
+7. After download or upload, the STT job starts automatically when transcription is enabled or when using MP4 upload.
+8. From the video list, you can play the video, open the original URL, download MP4, or download `txt` / `srt` / `vtt` / `json`.
 
 ## Notes
 

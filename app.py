@@ -16,6 +16,7 @@ from urllib import error as urllib_error
 from urllib import request as urllib_request
 
 from flask import Flask, jsonify, render_template, request, send_from_directory
+from werkzeug.utils import secure_filename
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -89,9 +90,16 @@ TRANSLATIONS = {
         "status.optional": "可選安裝",
         "form.url": "YouTube 影片網址",
         "form.url_placeholder": "https://www.youtube.com/watch?v=...",
+        "form.tab_youtube": "YouTube 下載",
+        "form.tab_upload": "上傳 MP4",
         "form.submit": "開始下載",
         "form.submit_transcribe": "下載與轉成文字",
         "form.quality": "下載畫質",
+        "upload.title": "影片標題",
+        "upload.title_placeholder": "請輸入這支影片的標題",
+        "upload.file": "本機 MP4 檔案",
+        "upload.submit": "上傳並轉成文字",
+        "upload.hint": "上傳完成後，系統會自動開始進行轉文字。",
         "video.author": "作者：",
         "video.source": "影片網址",
         "tip.copyright": "請只下載你有權限保存的內容，並自行遵守 YouTube 條款與著作權規範。",
@@ -146,6 +154,10 @@ TRANSLATIONS = {
         "error.fetch_status": "無法取得下載狀態。",
         "error.download_failed": "下載失敗，請稍後再試。",
         "error.output_missing": "影片已完成，但找不到輸出檔案。",
+        "upload.error.file_required": "請先選擇一個 MP4 檔案。",
+        "upload.error.title_required": "請先輸入影片標題。",
+        "upload.error.invalid_type": "目前只支援上傳 MP4 檔案。",
+        "upload.error.save_failed": "無法儲存上傳的 MP4 檔案。",
         "warning.no_ffmpeg": "目前系統尚未安裝 ffmpeg，所以會優先下載可直接取得的 mp4 版本。",
         "warning.no_node": "目前系統尚未安裝 nodejs，YouTube 某些格式可能會抓不完整。",
         "warning.no_cookies": "若遇到 YouTube 要求登入驗證，請掛入 cookies 檔案。",
@@ -201,9 +213,16 @@ TRANSLATIONS = {
         "status.optional": "可选安装",
         "form.url": "YouTube 视频网址",
         "form.url_placeholder": "https://www.youtube.com/watch?v=...",
+        "form.tab_youtube": "YouTube 下载",
+        "form.tab_upload": "上传 MP4",
         "form.submit": "开始下载",
         "form.submit_transcribe": "下载与转成文字",
         "form.quality": "下载画质",
+        "upload.title": "视频标题",
+        "upload.title_placeholder": "请输入这支视频的标题",
+        "upload.file": "本地 MP4 文件",
+        "upload.submit": "上传并转成文字",
+        "upload.hint": "上传完成后，系统会自动开始进行转文字。",
         "video.author": "作者：",
         "video.source": "视频网址",
         "tip.copyright": "请只下载你有权限保存的内容，并自行遵守 YouTube 条款与著作权规范。",
@@ -258,6 +277,10 @@ TRANSLATIONS = {
         "error.fetch_status": "无法取得下载状态。",
         "error.download_failed": "下载失败，请稍后再试。",
         "error.output_missing": "视频已完成，但找不到输出文件。",
+        "upload.error.file_required": "请先选择一个 MP4 文件。",
+        "upload.error.title_required": "请先输入视频标题。",
+        "upload.error.invalid_type": "目前只支持上传 MP4 文件。",
+        "upload.error.save_failed": "无法保存上传的 MP4 文件。",
         "warning.no_ffmpeg": "当前系统尚未安装 ffmpeg，因此会优先下载可直接取得的 mp4 版本。",
         "warning.no_node": "当前系统尚未安装 nodejs，YouTube 某些格式可能无法完整抓取。",
         "warning.no_cookies": "若遇到 YouTube 要求登录验证，请挂载 cookies 文件。",
@@ -313,9 +336,16 @@ TRANSLATIONS = {
         "status.optional": "Optional",
         "form.url": "YouTube Video URL",
         "form.url_placeholder": "https://www.youtube.com/watch?v=...",
+        "form.tab_youtube": "YouTube Download",
+        "form.tab_upload": "Upload MP4",
         "form.submit": "Download",
         "form.submit_transcribe": "Download And Transcribe",
         "form.quality": "Quality",
+        "upload.title": "Video Title",
+        "upload.title_placeholder": "Enter a title for this video",
+        "upload.file": "Local MP4 File",
+        "upload.submit": "Upload And Transcribe",
+        "upload.hint": "The service starts transcription automatically after the upload finishes.",
         "video.author": "Author:",
         "video.source": "Source URL",
         "tip.copyright": "Download only content you are allowed to save, and make sure you comply with YouTube terms and copyright rules.",
@@ -370,6 +400,10 @@ TRANSLATIONS = {
         "error.fetch_status": "Unable to fetch download status.",
         "error.download_failed": "Download failed. Please try again later.",
         "error.output_missing": "The video finished, but the output file could not be found.",
+        "upload.error.file_required": "Please choose an MP4 file first.",
+        "upload.error.title_required": "Please enter a video title first.",
+        "upload.error.invalid_type": "Only MP4 uploads are supported.",
+        "upload.error.save_failed": "Unable to save the uploaded MP4 file.",
         "warning.no_ffmpeg": "ffmpeg is not installed, so the app will prioritize MP4 formats that can be downloaded directly.",
         "warning.no_node": "nodejs is not installed, so some YouTube formats may be incomplete.",
         "warning.no_cookies": "If YouTube asks for sign-in verification, mount a cookies file.",
@@ -425,9 +459,16 @@ TRANSLATIONS = {
         "status.optional": "任意",
         "form.url": "YouTube 動画 URL",
         "form.url_placeholder": "https://www.youtube.com/watch?v=...",
+        "form.tab_youtube": "YouTube ダウンロード",
+        "form.tab_upload": "MP4 をアップロード",
         "form.submit": "ダウンロード開始",
         "form.submit_transcribe": "ダウンロードして文字起こし",
         "form.quality": "画質",
+        "upload.title": "動画タイトル",
+        "upload.title_placeholder": "この動画のタイトルを入力してください",
+        "upload.file": "ローカル MP4 ファイル",
+        "upload.submit": "アップロードして文字起こし",
+        "upload.hint": "アップロード完了後、自動で文字起こしが始まります。",
         "video.author": "作者：",
         "video.source": "動画URL",
         "tip.copyright": "保存権限のあるコンテンツのみをダウンロードし、YouTube の利用規約と著作権ルールを守ってください。",
@@ -482,6 +523,10 @@ TRANSLATIONS = {
         "error.fetch_status": "ダウンロード状態を取得できません。",
         "error.download_failed": "ダウンロードに失敗しました。しばらくしてから再試行してください。",
         "error.output_missing": "ダウンロードは完了しましたが、出力ファイルが見つかりません。",
+        "upload.error.file_required": "先に MP4 ファイルを選択してください。",
+        "upload.error.title_required": "先に動画タイトルを入力してください。",
+        "upload.error.invalid_type": "アップロードできるのは MP4 ファイルのみです。",
+        "upload.error.save_failed": "アップロードした MP4 ファイルを保存できませんでした。",
         "warning.no_ffmpeg": "ffmpeg が未インストールのため、直接取得できる mp4 形式を優先します。",
         "warning.no_node": "nodejs が未インストールのため、一部の YouTube 形式が不完全になる可能性があります。",
         "warning.no_cookies": "YouTube がサインイン確認を要求する場合は cookies ファイルをマウントしてください。",
@@ -781,6 +826,17 @@ def find_existing_downloaded_file(output_lines: list[str]) -> Path | None:
         if candidate.is_file():
             return candidate
     return None
+
+
+def build_upload_filename(raw_title: str, original_filename: str) -> str:
+    preferred_name = raw_title.strip() or Path(original_filename).stem or "uploaded-video"
+    safe_stem = secure_filename(preferred_name) or f"uploaded-video-{uuid.uuid4().hex[:8]}"
+    candidate = DOWNLOADS_DIR / f"{safe_stem}.mp4"
+    suffix = 1
+    while candidate.exists():
+        candidate = DOWNLOADS_DIR / f"{safe_stem}-{suffix}.mp4"
+        suffix += 1
+    return candidate.name
 
 
 def parse_progress_line(line: str) -> tuple[float | None, str | None, str]:
@@ -1402,6 +1458,55 @@ def job_status(job_id: str):
 @app.get("/api/videos")
 def videos():
     return jsonify({"videos": list_video_files()})
+
+
+@app.post("/api/v1/uploads")
+@app.post("/api/uploads")
+def upload_video():
+    file = request.files.get("file")
+    title = str(request.form.get("title", "")).strip()
+    model = str(request.form.get("model", STT_DEFAULT_MODEL)).strip() or STT_DEFAULT_MODEL
+
+    if not file or not file.filename:
+        return jsonify({"error": "MP4 file is required.", "error_key": "upload.error.file_required"}), 400
+
+    if not title:
+        return jsonify({"error": "Title is required.", "error_key": "upload.error.title_required"}), 400
+
+    source_name = file.filename.strip()
+    if not source_name.lower().endswith(".mp4"):
+        return jsonify({"error": "Only MP4 files are supported.", "error_key": "upload.error.invalid_type"}), 400
+
+    target_filename = build_upload_filename(title, source_name)
+    target_path = DOWNLOADS_DIR / target_filename
+
+    try:
+        file.save(target_path)
+        upsert_video_index_entry(
+            target_filename,
+            {
+                "title": title,
+                "uploader": None,
+                "webpage_url": None,
+                "source_type": "upload",
+            },
+        )
+        status_code, data = stt_request("/jobs", method="POST", payload={"filename": target_filename, "model": model})
+        if status_code >= 400:
+            return jsonify(data), status_code
+
+        return jsonify(
+            {
+                "filename": target_filename,
+                "title": title,
+                "transcription_job_id": data.get("job_id"),
+                "video": next((item for item in list_video_files() if item["filename"] == target_filename), None),
+            }
+        ), 201
+    except OSError:
+        if target_path.exists():
+            target_path.unlink(missing_ok=True)
+        return jsonify({"error": "Failed to save uploaded MP4.", "error_key": "upload.error.save_failed"}), 500
 
 
 @app.post("/api/v1/transcriptions")

@@ -73,48 +73,79 @@
       </section>
 
       <section class="panel">
-        <form class="download-form" id="download-form">
-          <label for="url" data-i18n="form.url">{{ translations['zh-Hant']['form.url'] }}</label>
-          <div class="field-row">
-            <input
-              id="url"
-              name="url"
-              type="url"
-              placeholder="{{ translations['zh-Hant']['form.url_placeholder'] }}"
-              data-i18n-placeholder="form.url_placeholder"
-              required
-            />
-          </div>
-          <div class="field-stack">
-            <label for="quality" data-i18n="form.quality">{{ translations['zh-Hant']['form.quality'] }}</label>
-            <select id="quality" name="quality">
-              {% for key, option in quality_options.items() %}
-              <option value="{{ key }}" {{ 'selected' if key == 'best' else '' }}>
-                {{ translations['zh-Hant'][option.label_key] }}
-              </option>
-              {% endfor %}
-            </select>
-          </div>
+        <div class="input-tabs" id="input-tabs" role="tablist" aria-label="Input mode selector">
+          <button type="button" class="input-tab active" id="tab-youtube" data-tab="youtube" role="tab" aria-selected="true" data-i18n="form.tab_youtube">{{ translations['zh-Hant']['form.tab_youtube'] }}</button>
+          <button type="button" class="input-tab" id="tab-upload" data-tab="upload" role="tab" aria-selected="false" data-i18n="form.tab_upload">{{ translations['zh-Hant']['form.tab_upload'] }}</button>
+        </div>
 
-          <p class="tip" data-i18n="tip.copyright">{{ translations['zh-Hant']['tip.copyright'] }}</p>
-
-          <div class="button-row">
-            <button type="submit" id="submit-button" data-i18n="form.submit">{{ translations['zh-Hant']['form.submit'] }}</button>
-            <button type="button" id="submit-transcribe-button" data-i18n="form.submit_transcribe">{{ translations['zh-Hant']['form.submit_transcribe'] }}</button>
-          </div>
-
-          <section class="progress-panel hidden" id="progress-panel">
-            <div class="progress-header">
-              <p class="progress-kicker" data-i18n="progress.kicker">{{ translations['zh-Hant']['progress.kicker'] }}</p>
-              <strong id="progress-percent">0%</strong>
+        <div class="tab-pane active" id="pane-youtube" data-pane="youtube">
+          <form class="download-form" id="download-form">
+            <label for="url" data-i18n="form.url">{{ translations['zh-Hant']['form.url'] }}</label>
+            <div class="field-row">
+              <input
+                id="url"
+                name="url"
+                type="url"
+                placeholder="{{ translations['zh-Hant']['form.url_placeholder'] }}"
+                data-i18n-placeholder="form.url_placeholder"
+                required
+              />
             </div>
-            <div class="progress-track" aria-hidden="true">
-              <div class="progress-bar" id="progress-bar"></div>
+            <div class="field-stack">
+              <label for="quality" data-i18n="form.quality">{{ translations['zh-Hant']['form.quality'] }}</label>
+              <select id="quality" name="quality">
+                {% for key, option in quality_options.items() %}
+                <option value="{{ key }}" {{ 'selected' if key == 'best' else '' }}>
+                  {{ translations['zh-Hant'][option.label_key] }}
+                </option>
+                {% endfor %}
+              </select>
             </div>
-            <p class="progress-status" id="progress-status" data-i18n="progress.waiting">{{ translations['zh-Hant']['progress.waiting'] }}</p>
-          </section>
 
-        </form>
+            <p class="tip" data-i18n="tip.copyright">{{ translations['zh-Hant']['tip.copyright'] }}</p>
+
+            <div class="button-row">
+              <button type="submit" id="submit-button" data-i18n="form.submit">{{ translations['zh-Hant']['form.submit'] }}</button>
+              <button type="button" id="submit-transcribe-button" data-i18n="form.submit_transcribe">{{ translations['zh-Hant']['form.submit_transcribe'] }}</button>
+            </div>
+
+            <section class="progress-panel hidden" id="progress-panel">
+              <div class="progress-header">
+                <p class="progress-kicker" data-i18n="progress.kicker">{{ translations['zh-Hant']['progress.kicker'] }}</p>
+                <strong id="progress-percent">0%</strong>
+              </div>
+              <div class="progress-track" aria-hidden="true">
+                <div class="progress-bar" id="progress-bar"></div>
+              </div>
+              <p class="progress-status" id="progress-status" data-i18n="progress.waiting">{{ translations['zh-Hant']['progress.waiting'] }}</p>
+            </section>
+
+          </form>
+        </div>
+
+        <div class="tab-pane" id="pane-upload" data-pane="upload">
+          <form class="upload-form" id="upload-form">
+            <div class="field-stack">
+              <label for="upload-title" data-i18n="upload.title">{{ translations['zh-Hant']['upload.title'] }}</label>
+              <input
+                id="upload-title"
+                name="title"
+                type="text"
+                placeholder="{{ translations['zh-Hant']['upload.title_placeholder'] }}"
+                data-i18n-placeholder="upload.title_placeholder"
+                required
+              />
+            </div>
+            <div class="field-stack">
+              <label for="upload-file" data-i18n="upload.file">{{ translations['zh-Hant']['upload.file'] }}</label>
+              <input id="upload-file" name="file" type="file" accept="video/mp4,.mp4" required />
+            </div>
+            <p class="tip" data-i18n="upload.hint">{{ translations['zh-Hant']['upload.hint'] }}</p>
+            <div class="button-row">
+              <button type="submit" id="upload-submit-button" data-i18n="upload.submit">{{ translations['zh-Hant']['upload.submit'] }}</button>
+            </div>
+          </form>
+        </div>
 
         <div class="message error hidden" id="error-box"></div>
       </section>
@@ -221,12 +252,16 @@
     <script>
       const translations = {{ translations | tojson }};
       const fallbackLocale = "zh-Hant";
+      const inputTabs = Array.from(document.querySelectorAll(".input-tab"));
+      const inputPanes = Array.from(document.querySelectorAll(".tab-pane"));
       const form = document.getElementById("download-form");
+      const uploadForm = document.getElementById("upload-form");
       const languageButtons = Array.from(document.querySelectorAll(".language-button"));
       const languagePicker = document.querySelector(".language-picker");
       const languageMenuToggle = document.getElementById("language-menu-toggle");
       const submitButton = document.getElementById("submit-button");
       const submitTranscribeButton = document.getElementById("submit-transcribe-button");
+      const uploadSubmitButton = document.getElementById("upload-submit-button");
       const progressPanel = document.getElementById("progress-panel");
       const progressBar = document.getElementById("progress-bar");
       const progressPercent = document.getElementById("progress-percent");
@@ -373,6 +408,18 @@
 
       function hideDownloadProgress() {
         progressPanel.classList.add("hidden");
+      }
+
+      function setInputTab(tabName) {
+        inputTabs.forEach((button) => {
+          const isActive = button.dataset.tab === tabName;
+          button.classList.toggle("active", isActive);
+          button.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+        inputPanes.forEach((pane) => {
+          pane.classList.toggle("active", pane.dataset.pane === tabName);
+        });
+        hideError();
       }
 
       function closePlayerModal() {
@@ -657,6 +704,30 @@
         return data;
       }
 
+      async function monitorTranscriptJob(jobId, video) {
+        return await new Promise((resolve) => {
+          const poll = async () => {
+            try {
+              const jobData = await pollTranscriptJob(jobId, video);
+              if (jobData.status === "running" || jobData.status === "queued") {
+                transcriptionPollers[video.filename] = setTimeout(poll, 1000);
+                return;
+              }
+              resolve(jobData.status === "completed");
+            } catch (error) {
+              clearTranscriptionState(video.filename);
+              submitButton.disabled = false;
+              submitTranscribeButton.disabled = false;
+              uploadSubmitButton.disabled = false;
+              showTranscriptError(error.message || t("stt.error.status"));
+              resolve(false);
+            }
+          };
+
+          poll();
+        });
+      }
+
       async function startTranscription(video) {
         hideTranscriptError();
         setTranscriptionState(video.filename, {
@@ -681,26 +752,7 @@
           return false;
         }
 
-        return await new Promise((resolve) => {
-          const poll = async () => {
-            try {
-              const jobData = await pollTranscriptJob(data.job_id, video);
-              if (jobData.status === "running" || jobData.status === "queued") {
-                transcriptionPollers[video.filename] = setTimeout(poll, 1000);
-                return;
-              }
-              resolve(jobData.status === "completed");
-            } catch (error) {
-              clearTranscriptionState(video.filename);
-              submitButton.disabled = false;
-              submitTranscribeButton.disabled = false;
-              showTranscriptError(error.message || t("stt.error.status"));
-              resolve(false);
-            }
-          };
-
-          poll();
-        });
+        return await monitorTranscriptJob(data.job_id, video);
       }
 
       function renderVideoList(videos) {
@@ -891,17 +943,88 @@
         }
       }
 
+      async function startUpload() {
+        hideError();
+        hideTranscriptError();
+        closeCompletionModal();
+        uploadSubmitButton.disabled = true;
+
+        const uploadTitle = uploadForm.elements.namedItem("title")?.value?.trim();
+        const uploadFile = uploadForm.elements.namedItem("file")?.files?.[0];
+        if (!uploadTitle) {
+          uploadSubmitButton.disabled = false;
+          showError(t("upload.error.title_required"));
+          return;
+        }
+        if (!uploadFile) {
+          uploadSubmitButton.disabled = false;
+          showError(t("upload.error.file_required"));
+          return;
+        }
+
+        const payload = new FormData();
+        payload.append("title", uploadTitle);
+        payload.append("file", uploadFile);
+        payload.append("model", transcriptionModel.value);
+
+        try {
+          const response = await fetch("/api/uploads", {
+            method: "POST",
+            body: payload,
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(localizeError(data));
+          }
+
+          await loadVideos();
+          const targetVideo = currentVideos.find((video) => video.filename === data.filename) || {
+            filename: data.filename,
+            title: data.title,
+          };
+
+          setTranscriptionState(targetVideo.filename, {
+            active: true,
+            progress: 0,
+            statusText: t("stt.queued"),
+          });
+          uploadForm.reset();
+          setInputTab("youtube");
+
+          if (data.transcription_job_id) {
+            await monitorTranscriptJob(data.transcription_job_id, targetVideo);
+            openCompletionModal("modal.completed_download_transcribe");
+          }
+        } catch (error) {
+          showError(error.message || t("stt.error.start"));
+        } finally {
+          uploadSubmitButton.disabled = false;
+        }
+      }
+
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         await startDownload(false);
+      });
+
+      uploadForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await startUpload();
       });
 
       submitTranscribeButton.addEventListener("click", async () => {
         await startDownload(true);
       });
 
+      inputTabs.forEach((button) => {
+        button.addEventListener("click", () => {
+          setInputTab(button.dataset.tab);
+        });
+      });
+
       currentLocale = translations[currentLocale] ? currentLocale : fallbackLocale;
       applyTranslations();
+      setInputTab("youtube");
       loadVideos();
       languageMenuToggle.addEventListener("click", () => {
         const isOpen = languagePicker.classList.toggle("open");
