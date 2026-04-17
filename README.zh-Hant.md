@@ -1,9 +1,10 @@
 # YouTube to MP4 Downloader
 
-這是一個可在本機或 Docker 上運行的 YouTube 下載工具，支援：
+這是一個可在本機或 Docker 上運行的 YouTube 下載與影音轉文字工具，支援：
 
 - Docker 部署
 - MP4 永久儲存
+- 影片轉文字
 - 畫質選擇
 - 即時下載進度
 - 繁中、簡中、英文、日文介面
@@ -18,7 +19,12 @@
 
 - 支援 YouTube `watch`、`youtu.be`、`shorts`、`embed` 網址
 - 可選擇下載畫質：`最佳可用畫質`、`1080p`、`720p`、`360p`
-- 下載時可看到即時進度與狀態文字
+- 可使用 `開始下載` 或 `下載與轉成文字`
+- 下載時可看到即時進度與狀態文字，完成後只保留完成彈窗
+- 影片列表可播放本機 MP4、開啟原始 YouTube 網址、下載 MP4 或字幕檔
+- 支援本機 `faster-whisper` 轉文字，輸出 `txt`、`srt`、`vtt`、`json`
+- 轉文字進度會顯示在各自影片列內，不與下載進度共用
+- 最新加入的影片會在標題前顯示紅色 `NEW` 標記
 - 安裝 `ffmpeg` 時可輸出合併後的 MP4
 - 可從右上角按鈕列切換語言
 - 可將下載影片持久化儲存在容器外
@@ -28,6 +34,7 @@
 
 - Python `Flask`
 - `yt-dlp`
+- `faster-whisper`
 - `ffmpeg`
 - `nodejs`，用於 YouTube JavaScript runtime 解析
 - Docker / Docker Compose
@@ -40,6 +47,7 @@
 - `docker-compose.yml`
 - 永久儲存映射
 - cookies 掛載設定
+- STT 獨立服務容器
 
 啟動方式：
 
@@ -59,26 +67,40 @@ docker compose up --build -d
 http://127.0.0.1:5001
 ```
 
-## 永久儲存 MP4
+## 永久儲存資料夾
 
-下載完成的 MP4 會透過以下 bind mount 儲存在主機：
+下載完成的 MP4、轉錄結果與模型快取會透過以下 bind mount 儲存在主機：
 
 ```yaml
 volumes:
   - ./video-storage:/data/downloads
+  - ./transcripts:/data/output
+  - ./models:/models/huggingface
 ```
 
 這表示：
 
 - container 重啟後影片仍然保留
 - container 重建後影片仍然保留
-- 影片不會只存在容器內部檔案系統
+- 影片、字幕與模型不會只存在容器內部檔案系統
 
 如果你想改成其他主機路徑，例如：
 
 ```yaml
 volumes:
   - /Users/yourname/Movies/youtube-downloads:/data/downloads
+```
+
+轉文字輸出預設會放在：
+
+```text
+./transcripts
+```
+
+Whisper 模型快取預設會放在：
+
+```text
+./models
 ```
 
 ## YouTube Cookies 設定
@@ -131,12 +153,16 @@ brew install ffmpeg
 ├── app.py
 ├── Dockerfile
 ├── docker-compose.yml
+├── docker/
+│   └── stt/
 ├── requirements.txt
 ├── static/
 ├── templates/
 ├── assets/
 ├── cookies/
-└── video-storage/
+├── video-storage/
+├── transcripts/
+└── models/
 ```
 
 ## 使用方式
@@ -144,14 +170,21 @@ brew install ffmpeg
 1. 在瀏覽器打開服務頁面。
 2. 貼上 YouTube 影片網址。
 3. 選擇你要的畫質。
-4. 按下載按鈕。
-5. 在畫面上查看即時進度與狀態文字。
-6. 下載完成後，從完成區塊下載 MP4 檔案。
+4. 按 `開始下載` 或 `下載與轉成文字`。
+5. 在畫面上查看即時下載進度與狀態文字。
+6. 若選擇轉文字，下載完成後會自動接續 STT 工作。
+7. 完成後可在下方影片列表中：
+   - 播放影片
+   - 開啟原始 YouTube 網址
+   - 下載 MP4
+   - 下載 `txt` / `srt` / `vtt` / `json`
+   - 重新轉文字
 
 ## 補充說明
 
 - 如果沒有 `ffmpeg`，程式會退回可直接下載的格式。
 - 如果有 `ffmpeg`，可將分離式影音串流合併為 MP4。
+- 第一次執行 `faster-whisper` 時，會先下載模型到 `./models`，之後同模型會直接使用快取。
 - 某些影片仍可能因帳號、區域、年齡限制或反機器人驗證而需要有效 cookies。
 
 ## 授權
