@@ -1,109 +1,159 @@
 # YouTube to MP4 Downloader
 
-這是一個本機執行或用 Docker 部署的小工具，貼上 YouTube 影片網址後，就能下載成 MP4 檔案。
+A local web app for downloading YouTube videos to MP4 with:
 
-## 注意事項
+- Docker deployment
+- persistent video storage
+- quality selection
+- live download progress
+- Traditional Chinese, Simplified Chinese, English, and Japanese UI
 
-- 請只下載你有權限保存的內容。
-- 使用前請自行確認是否符合 YouTube 條款、影片授權與著作權規範。
+> Download only content you are allowed to save, and make sure you comply with YouTube terms and copyright rules.
 
-## 需求
+## Preview
 
-- Python 3.14 以上
+![App preview](assets/app-preview.svg)
+
+## Features
+
+- Paste a YouTube `watch`, `youtu.be`, `shorts`, or `embed` URL
+- Choose output quality: `Best`, `1080p`, `720p`, or `360p`
+- See progress and status updates while downloading
+- Download merged MP4 output when `ffmpeg` is available
+- Switch UI language from the top-right button bar
+- Persist downloaded files outside the container
+- Support YouTube cookies for sign-in / anti-bot verification flows
+
+## Tech Stack
+
+- Python `Flask`
 - `yt-dlp`
-- `ffmpeg`（可選，但建議安裝，能讓高畫質影片與音訊合併輸出成 MP4）
+- `ffmpeg`
+- `nodejs` for YouTube JavaScript runtime support
+- Docker / Docker Compose
 
-## 安裝
+## Quick Start With Docker
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+This project is intended to run with Docker and already includes:
 
-如果你想要高畫質合併輸出，macOS 可另外安裝：
+- `Dockerfile`
+- `docker-compose.yml`
+- persistent storage mapping
+- cookies mounting
 
-```bash
-brew install ffmpeg
-```
-
-## Docker 啟動
-
-專案已包含 `Dockerfile` 與 `docker-compose.yml`，容器內已安裝 `ffmpeg` 與 `nodejs`，可支援較完整的 MP4 合併輸出與 YouTube JavaScript 解析。
+Start the service:
 
 ```bash
 docker-compose up --build -d
 ```
 
-如果你的 Docker 是新版 Compose plugin，也可以用：
+If your environment uses the newer Compose plugin:
 
 ```bash
 docker compose up --build -d
 ```
 
-啟動後可在瀏覽器開啟：
+Open the app in your browser:
 
 ```text
 http://127.0.0.1:5001
 ```
 
-### 永久保存 MP4 檔案
+## Persistent Storage
 
-- `docker-compose.yml` 已把主機上的 `./video-storage` 掛載到容器內的 `/data/downloads`
-- 所有下載完成的 MP4 都會留在主機的 `video-storage/` 資料夾
-- 就算容器刪掉重建，影片檔案仍會保留
-
-### YouTube cookies 設定
-
-若出現 `Sign in to confirm you're not a bot`，代表 YouTube 要求登入驗證。這時請把你匯出的 cookies 檔放到專案的 `cookies/youtube.txt`。
-
-- 主機路徑：`./cookies/youtube.txt`
-- 容器路徑：`/data/cookies/youtube.txt`
-- `docker-compose.yml` 已自動掛載成唯讀
-- 程式會先把 cookies 複製到容器內可寫的暫存位置，再交給 `yt-dlp` 使用
-
-建議使用瀏覽器外掛把已登入 YouTube 的 cookies 匯出成 Netscape 格式文字檔，再命名成 `youtube.txt`。
-
-如果你想改成別的外部路徑，可以把：
+Downloaded MP4 files are stored on the host machine through this bind mount:
 
 ```yaml
 volumes:
   - ./video-storage:/data/downloads
 ```
 
-改成例如：
+That means:
+
+- files remain available after container restart
+- files remain available after container rebuild
+- downloaded videos stay outside the container filesystem
+
+If you want to use another host folder, change it to something like:
 
 ```yaml
 volumes:
   - /Users/yourname/Movies/youtube-downloads:/data/downloads
 ```
 
-## 啟動
+## YouTube Cookies Setup
+
+If YouTube returns messages such as `Sign in to confirm you're not a bot`, export your YouTube cookies in Netscape format and place them here:
+
+```text
+./cookies/youtube.txt
+```
+
+Docker mounts that file to:
+
+```text
+/data/cookies/youtube.txt
+```
+
+Notes:
+
+- the compose file mounts the cookies directory as read-only
+- the app copies the cookie file into a writable temp location before calling `yt-dlp`
+- the container also enables `YTDLP_REMOTE_COMPONENTS=ejs:github`
+
+## Local Development
+
+If you want to run it without Docker:
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 python3 app.py
 ```
 
-啟動後打開瀏覽器進入：
+Then open:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-## 功能說明
+For better MP4 merging on macOS:
 
-- 支援一般 YouTube `watch` 網址
-- 支援 `youtu.be` 短網址
-- 支援 `shorts` 網址
-- 下載完成後可直接點按鈕取得檔案
-- 可透過 `DOWNLOADS_DIR` 環境變數指定下載資料夾
-- Docker 預設會存放在主機的 `video-storage/` 資料夾
-- Docker 預設會從 `cookies/youtube.txt` 讀取 YouTube cookies
-- Docker 預設會啟用 `YTDLP_REMOTE_COMPONENTS=ejs:github`
+```bash
+brew install ffmpeg
+```
 
-## 補充
+## Project Structure
 
-- 若系統沒有 `ffmpeg`，程式會先嘗試抓可直接下載的 MP4 格式。
-- 若遇到某些影片只有分離式影音串流，安裝 `ffmpeg` 後成功率和畫質通常會更好。
-- Docker 版本已內建 `ffmpeg` 與 `nodejs`，因此更適合直接部署使用。
-- 若 YouTube 要求 bot 驗證，通常仍需要 cookies 才能成功下載。
+```text
+.
+├── app.py
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── static/
+├── templates/
+├── assets/
+├── cookies/
+└── video-storage/
+```
+
+## Usage
+
+1. Open the app in your browser.
+2. Paste a YouTube video URL.
+3. Choose your preferred quality.
+4. Click the download button.
+5. Watch the live progress bar and status text.
+6. Download the resulting MP4 from the completed job panel.
+
+## Notes
+
+- Without `ffmpeg`, the app falls back to formats that can be downloaded directly.
+- With `ffmpeg`, separated audio/video streams can be merged into MP4.
+- Some YouTube videos may still require valid cookies, depending on account, region, age restriction, or anti-bot checks.
+
+## License
+
+This project is released under the MIT License. See [LICENSE](LICENSE).
