@@ -30,6 +30,31 @@ model_lock = threading.Lock()
 loaded_models: dict[str, WhisperModel] = {}
 
 
+def resolve_model_repo_name(model_name: str) -> str:
+    if "/" in model_name:
+        return model_name
+    return f"Systran/faster-whisper-{model_name}"
+
+
+def get_model_cache_state(model_name: str) -> dict[str, Any]:
+    repo_name = resolve_model_repo_name(model_name)
+    model_dir = Path(MODEL_CACHE_DIR) / f"models--{repo_name.replace('/', '--')}"
+    if not model_dir.exists():
+        return {
+            "model_cache_bytes": 0,
+            "model_download_incomplete_bytes": 0,
+            "model_download_active": False,
+        }
+
+    cache_bytes = sum(path.stat().st_size for path in model_dir.rglob("*") if path.is_file())
+    incomplete_bytes = sum(path.stat().st_size for path in model_dir.rglob("*.incomplete") if path.is_file())
+    return {
+        "model_cache_bytes": cache_bytes,
+        "model_download_incomplete_bytes": incomplete_bytes,
+        "model_download_active": incomplete_bytes > 0,
+    }
+
+
 def create_job(filename: str, model_name: str) -> dict[str, Any]:
     job_id = uuid.uuid4().hex
     job = {
@@ -58,7 +83,13 @@ def update_job(job_id: str, **changes: Any) -> None:
 def get_job(job_id: str) -> dict[str, Any] | None:
     with jobs_lock:
         job = jobs.get(job_id)
-        return dict(job) if job else None
+        if not job:
+            return None
+        snapshot = dict(job)
+
+    if snapshot.get("status_key") == "stt.loading_model":
+        snapshot.update(get_model_cache_state(str(snapshot.get("model", DEFAULT_MODEL))))
+    return snapshot
 
 
 def get_duration_seconds(file_path: Path) -> float | None:

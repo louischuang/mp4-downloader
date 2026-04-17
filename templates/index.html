@@ -198,6 +198,30 @@
         return translations[currentLocale]?.[key] || translations[fallbackLocale]?.[key] || fallback || key;
       }
 
+      function tFormat(key, variables, fallback = "") {
+        let template = t(key, fallback);
+        Object.entries(variables || {}).forEach(([name, value]) => {
+          template = template.replaceAll(`{${name}}`, value);
+        });
+        return template;
+      }
+
+      function formatBytes(bytes) {
+        const numericBytes = Number(bytes) || 0;
+        if (numericBytes <= 0) {
+          return "0 B";
+        }
+        const units = ["B", "KB", "MB", "GB", "TB"];
+        let value = numericBytes;
+        let unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+          value /= 1024;
+          unitIndex += 1;
+        }
+        const decimals = value >= 10 || unitIndex === 0 ? 0 : 1;
+        return `${value.toFixed(decimals)} ${units[unitIndex]}`;
+      }
+
       function localizeError(data) {
         return data?.error_key ? t(data.error_key, data.error || "") : (data?.error || t("error.download_failed"));
       }
@@ -368,7 +392,13 @@
           throw new Error(localizeError(data));
         }
 
-        const translatedStatus = data.status_key ? t(data.status_key) : data.status_text;
+        let translatedStatus = data.status_key ? t(data.status_key) : data.status_text;
+        if (data.status_key === "stt.loading_model" && data.model_cache_bytes) {
+          const sizeText = formatBytes(data.model_cache_bytes);
+          translatedStatus = data.model_download_active
+            ? tFormat("stt.loading_model_downloading", { size: sizeText }, translatedStatus)
+            : tFormat("stt.loading_model_cached", { size: sizeText }, translatedStatus);
+        }
         updateTranscriptProgress(data.progress, translatedStatus || data.status_text);
 
         if (data.status === "completed") {
