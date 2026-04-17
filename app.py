@@ -8,6 +8,7 @@ import tempfile
 import threading
 import uuid
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -22,6 +23,7 @@ DOWNLOADS_DIR = Path(os.getenv("DOWNLOADS_DIR", str(BASE_DIR / "downloads"))).re
 DOWNLOADS_DIR.mkdir(exist_ok=True)
 TRANSCRIPTS_DIR = Path(os.getenv("TRANSCRIPTS_DIR", str(BASE_DIR / "transcripts"))).resolve()
 TRANSCRIPTS_DIR.mkdir(exist_ok=True)
+VIDEO_INDEX_PATH = DOWNLOADS_DIR / ".video-index.json"
 APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
 APP_PORT = int(os.getenv("APP_PORT", "5000"))
 APP_DEBUG = os.getenv("APP_DEBUG", "false").lower() == "true"
@@ -40,6 +42,7 @@ YOUTUBE_HOSTS = {
 
 app = Flask(__name__)
 jobs_lock = threading.Lock()
+video_index_lock = threading.Lock()
 download_jobs: dict[str, dict[str, Any]] = {}
 QUALITY_OPTIONS = {
     "best": {
@@ -86,7 +89,10 @@ TRANSLATIONS = {
         "form.url": "YouTube 影片網址",
         "form.url_placeholder": "https://www.youtube.com/watch?v=...",
         "form.submit": "開始下載",
+        "form.submit_transcribe": "下載與轉成文字",
         "form.quality": "下載畫質",
+        "video.author": "作者：",
+        "video.source": "影片網址",
         "tip.copyright": "請只下載你有權限保存的內容，並自行遵守 YouTube 條款與著作權規範。",
         "progress.kicker": "下載進度",
         "progress.waiting": "等待下載開始",
@@ -103,6 +109,10 @@ TRANSLATIONS = {
         "result.completed": "下載完成：",
         "result.quality": "畫質：",
         "result.download": "下載檔案",
+        "modal.completed_title": "作業完成",
+        "modal.completed_download": "已完成下載。",
+        "modal.completed_download_transcribe": "已完成下載與轉文字。",
+        "modal.close": "關閉",
         "quality.best": "最佳可用畫質",
         "quality.1080p": "1080p",
         "quality.720p": "720p",
@@ -141,6 +151,8 @@ TRANSLATIONS = {
         "stt.result_title": "轉錄完成：",
         "stt.result_files": "輸出檔案：",
         "stt.play": "播放",
+        "stt.transcribed": "已轉文字",
+        "stt.transcribed_action": "已轉文字",
         "stt.player_title": "影片播放與字幕驗證",
         "stt.player_close": "關閉",
         "stt.player_no_captions": "目前還沒有可用字幕，請先執行影片轉文字。",
@@ -168,7 +180,10 @@ TRANSLATIONS = {
         "form.url": "YouTube 视频网址",
         "form.url_placeholder": "https://www.youtube.com/watch?v=...",
         "form.submit": "开始下载",
+        "form.submit_transcribe": "下载与转成文字",
         "form.quality": "下载画质",
+        "video.author": "作者：",
+        "video.source": "视频网址",
         "tip.copyright": "请只下载你有权限保存的内容，并自行遵守 YouTube 条款与著作权规范。",
         "progress.kicker": "下载进度",
         "progress.waiting": "等待下载开始",
@@ -185,6 +200,10 @@ TRANSLATIONS = {
         "result.completed": "下载完成：",
         "result.quality": "画质：",
         "result.download": "下载文件",
+        "modal.completed_title": "任务完成",
+        "modal.completed_download": "已完成下载。",
+        "modal.completed_download_transcribe": "已完成下载与转文字。",
+        "modal.close": "关闭",
         "quality.best": "最佳可用画质",
         "quality.1080p": "1080p",
         "quality.720p": "720p",
@@ -223,6 +242,8 @@ TRANSLATIONS = {
         "stt.result_title": "转录完成：",
         "stt.result_files": "输出文件：",
         "stt.play": "播放",
+        "stt.transcribed": "已转文字",
+        "stt.transcribed_action": "已转文字",
         "stt.player_title": "视频播放与字幕验证",
         "stt.player_close": "关闭",
         "stt.player_no_captions": "目前还没有可用字幕，请先执行视频转文字。",
@@ -250,7 +271,10 @@ TRANSLATIONS = {
         "form.url": "YouTube Video URL",
         "form.url_placeholder": "https://www.youtube.com/watch?v=...",
         "form.submit": "Download",
+        "form.submit_transcribe": "Download And Transcribe",
         "form.quality": "Quality",
+        "video.author": "Author:",
+        "video.source": "Source URL",
         "tip.copyright": "Download only content you are allowed to save, and make sure you comply with YouTube terms and copyright rules.",
         "progress.kicker": "Download Progress",
         "progress.waiting": "Waiting to start",
@@ -267,6 +291,10 @@ TRANSLATIONS = {
         "result.completed": "Download completed:",
         "result.quality": "Quality:",
         "result.download": "Download file",
+        "modal.completed_title": "Completed",
+        "modal.completed_download": "Download completed.",
+        "modal.completed_download_transcribe": "Download and transcription completed.",
+        "modal.close": "Close",
         "quality.best": "Best available",
         "quality.1080p": "1080p",
         "quality.720p": "720p",
@@ -305,6 +333,8 @@ TRANSLATIONS = {
         "stt.result_title": "Transcription completed:",
         "stt.result_files": "Output files:",
         "stt.play": "Play",
+        "stt.transcribed": "Transcribed",
+        "stt.transcribed_action": "Transcribed",
         "stt.player_title": "Video Playback And Caption Review",
         "stt.player_close": "Close",
         "stt.player_no_captions": "No captions are available yet. Run transcription first.",
@@ -332,7 +362,10 @@ TRANSLATIONS = {
         "form.url": "YouTube 動画 URL",
         "form.url_placeholder": "https://www.youtube.com/watch?v=...",
         "form.submit": "ダウンロード開始",
+        "form.submit_transcribe": "ダウンロードして文字起こし",
         "form.quality": "画質",
+        "video.author": "作者：",
+        "video.source": "動画URL",
         "tip.copyright": "保存権限のあるコンテンツのみをダウンロードし、YouTube の利用規約と著作権ルールを守ってください。",
         "progress.kicker": "ダウンロード進捗",
         "progress.waiting": "開始待ち",
@@ -349,6 +382,10 @@ TRANSLATIONS = {
         "result.completed": "ダウンロード完了：",
         "result.quality": "画質：",
         "result.download": "ファイルをダウンロード",
+        "modal.completed_title": "完了",
+        "modal.completed_download": "ダウンロードが完了しました。",
+        "modal.completed_download_transcribe": "ダウンロードと文字起こしが完了しました。",
+        "modal.close": "閉じる",
         "quality.best": "最良の画質",
         "quality.1080p": "1080p",
         "quality.720p": "720p",
@@ -387,6 +424,8 @@ TRANSLATIONS = {
         "stt.result_title": "文字起こし完了：",
         "stt.result_files": "出力ファイル：",
         "stt.play": "再生",
+        "stt.transcribed": "文字起こし済み",
+        "stt.transcribed_action": "文字起こし済み",
         "stt.player_title": "動画再生と字幕確認",
         "stt.player_close": "閉じる",
         "stt.player_no_captions": "利用可能な字幕はまだありません。先に文字起こしを実行してください。",
@@ -444,9 +483,7 @@ def normalize_quality(raw_quality: str) -> str:
     return "best"
 
 
-def build_download_command(url: str, quality: str) -> list[str]:
-    output_template = str(DOWNLOADS_DIR / "%(title).120s.%(ext)s")
-    selected_quality = QUALITY_OPTIONS[normalize_quality(quality)]
+def build_ytdlp_base_command() -> list[str]:
     base = [
         "yt-dlp",
         "--no-playlist",
@@ -454,8 +491,6 @@ def build_download_command(url: str, quality: str) -> list[str]:
         "--restrict-filenames",
         "--js-runtimes",
         "node",
-        "-o",
-        output_template,
     ]
 
     if YTDLP_COOKIES_FILE and Path(YTDLP_COOKIES_FILE).is_file():
@@ -463,6 +498,17 @@ def build_download_command(url: str, quality: str) -> list[str]:
 
     if YTDLP_REMOTE_COMPONENTS:
         base.extend(["--remote-components", YTDLP_REMOTE_COMPONENTS])
+
+    return base
+
+
+def build_download_command(url: str, quality: str) -> list[str]:
+    output_template = str(DOWNLOADS_DIR / "%(title).120s.%(ext)s")
+    selected_quality = QUALITY_OPTIONS[normalize_quality(quality)]
+    base = build_ytdlp_base_command() + [
+        "-o",
+        output_template,
+    ]
 
     if ffmpeg_exists():
         return base + [
@@ -478,6 +524,65 @@ def build_download_command(url: str, quality: str) -> list[str]:
         selected_quality["direct_format"],
         url,
     ]
+
+
+def fetch_video_metadata(url: str) -> dict[str, Any] | None:
+    command = build_ytdlp_base_command() + [
+        "--dump-single-json",
+        "--skip-download",
+        url,
+    ]
+    try:
+        completed = subprocess.run(command, capture_output=True, text=True, check=True, cwd=BASE_DIR)
+    except subprocess.CalledProcessError:
+        return None
+
+    stdout = completed.stdout.strip()
+    if not stdout:
+        return None
+
+    try:
+        payload = json.loads(stdout)
+    except json.JSONDecodeError:
+        return None
+
+    return {
+        "video_id": payload.get("id"),
+        "title": payload.get("title"),
+        "uploader": payload.get("uploader") or payload.get("channel"),
+        "webpage_url": payload.get("webpage_url") or url,
+    }
+
+
+def load_video_index() -> dict[str, dict[str, Any]]:
+    with video_index_lock:
+        if not VIDEO_INDEX_PATH.is_file():
+            return {}
+        try:
+            payload = json.loads(VIDEO_INDEX_PATH.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return {}
+    if not isinstance(payload, dict):
+        return {}
+    return {str(key): value for key, value in payload.items() if isinstance(value, dict)}
+
+
+def save_video_index(index: dict[str, dict[str, Any]]) -> None:
+    with video_index_lock:
+        VIDEO_INDEX_PATH.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def upsert_video_index_entry(filename: str, metadata: dict[str, Any]) -> None:
+    index = load_video_index()
+    existing = index.get(filename, {})
+    merged = {
+        **existing,
+        **metadata,
+        "filename": filename,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    index[filename] = merged
+    save_video_index(index)
 
 
 def create_job() -> tuple[str, dict[str, Any]]:
@@ -503,15 +608,22 @@ def create_job() -> tuple[str, dict[str, Any]]:
 
 def list_video_files() -> list[dict[str, Any]]:
     videos: list[dict[str, Any]] = []
+    index = load_video_index()
     for path in sorted(DOWNLOADS_DIR.glob("*.mp4"), key=lambda item: item.stat().st_mtime, reverse=True):
         vtt_path = TRANSCRIPTS_DIR / f"{path.stem}.vtt"
+        txt_path = TRANSCRIPTS_DIR / f"{path.stem}.txt"
+        entry = index.get(path.name, {})
         videos.append(
             {
                 "filename": path.name,
-                "title": path.stem,
+                "title": entry.get("title") or path.stem,
+                "uploader": entry.get("uploader"),
+                "youtube_url": entry.get("webpage_url"),
                 "size_bytes": path.stat().st_size,
                 "media_url": f"/media/{path.name}",
+                "download_url": f"/files/{path.name}",
                 "captions_url": f"/transcripts/{vtt_path.name}" if vtt_path.is_file() else None,
+                "is_transcribed": vtt_path.is_file() or txt_path.is_file(),
             }
         )
     return videos
@@ -584,6 +696,7 @@ def run_download_job(job_id: str, url: str, quality: str) -> None:
         if not yt_dlp_exists():
             raise RuntimeError("yt-dlp is not installed.")
 
+        metadata = fetch_video_metadata(normalized_url) or {}
         before = set(DOWNLOADS_DIR.iterdir())
         command = build_download_command(normalized_url, quality)
         process = subprocess.Popen(
@@ -634,13 +747,22 @@ def run_download_job(job_id: str, url: str, quality: str) -> None:
             progress=100.0,
             status_key="progress.completed",
             status_text="",
-            title=downloaded_file.stem,
+            title=metadata.get("title") or downloaded_file.stem,
             filename=downloaded_file.name,
             warning=build_runtime_warning(),
             warning_keys=build_runtime_warning_keys(),
             error=None,
             error_key=None,
             quality=normalize_quality(quality),
+        )
+        upsert_video_index_entry(
+            downloaded_file.name,
+            {
+                "title": metadata.get("title") or downloaded_file.stem,
+                "uploader": metadata.get("uploader"),
+                "webpage_url": metadata.get("webpage_url") or normalized_url,
+                "video_id": metadata.get("video_id"),
+            },
         )
     except Exception as exc:
         update_job(job_id, status="error", progress=0.0, status_key="progress.failed", status_text="", error=str(exc), error_key="error.download_failed")

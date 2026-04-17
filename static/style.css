@@ -191,6 +191,13 @@ h1 {
   margin-top: 16px;
 }
 
+.button-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
 .field-row {
   display: flex;
   gap: 12px;
@@ -283,6 +290,10 @@ button:hover,
   width: fit-content;
 }
 
+.row-download-link {
+  margin-top: 0;
+}
+
 .video-list {
   display: grid;
   gap: 14px;
@@ -314,6 +325,19 @@ button:hover,
   overflow-wrap: anywhere;
 }
 
+.video-detail,
+.video-source {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.94rem;
+  overflow-wrap: anywhere;
+}
+
+.video-source {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .video-meta span {
   margin-top: 6px;
   color: var(--muted);
@@ -326,6 +350,7 @@ button:hover,
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .compact {
@@ -341,6 +366,28 @@ button:hover,
 
 .transcript-link {
   margin-top: 0;
+}
+
+.video-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 58px;
+  padding: 0 18px;
+  border-radius: 18px;
+  color: var(--success);
+  background: rgba(30, 122, 73, 0.12);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.row-progress {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
 }
 
 .player-modal {
@@ -387,6 +434,38 @@ button:hover,
   width: 100%;
   border-radius: 22px;
   background: black;
+}
+
+.status-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(23, 23, 23, 0.48);
+  backdrop-filter: blur(8px);
+}
+
+.status-dialog {
+  width: min(520px, 100%);
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  background: rgba(255, 249, 240, 0.96);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.24);
+}
+
+.status-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.status-dialog-head .section-intro {
+  margin: 6px 0 0;
 }
 
 .progress-panel {
@@ -461,7 +540,8 @@ button:hover,
 
   .section-head,
   .video-row,
-  .player-head {
+  .player-head,
+  .status-dialog-head {
     flex-direction: column;
     align-items: stretch;
   }
