@@ -1,14 +1,18 @@
 :root {
-  --bg: #f4efe7;
-  --panel: rgba(255, 250, 243, 0.82);
-  --ink: #171717;
-  --muted: #5c5a57;
-  --accent: #ff5a36;
-  --accent-dark: #cb3d1d;
-  --line: rgba(23, 23, 23, 0.12);
-  --shadow: 0 24px 60px rgba(70, 34, 15, 0.12);
-  --success: #1e7a49;
-  --error: #b13232;
+  --bg: #07111f;
+  --bg-deep: #030813;
+  --panel: rgba(15, 27, 47, 0.56);
+  --panel-strong: rgba(11, 22, 39, 0.78);
+  --panel-soft: rgba(26, 43, 73, 0.34);
+  --ink: #eef6ff;
+  --muted: #9ab0ca;
+  --accent: #68b7ff;
+  --accent-dark: #8dc9ff;
+  --line: rgba(181, 212, 255, 0.16);
+  --shadow: 0 26px 70px rgba(0, 0, 0, 0.42);
+  --success: #64dfb2;
+  --error: #ff7f96;
+  --glow: 0 0 0 1px rgba(173, 212, 255, 0.08) inset;
 }
 
 * {
@@ -21,9 +25,34 @@ body {
   font-family: "Noto Sans TC", sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at top left, rgba(255, 90, 54, 0.24), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(248, 196, 74, 0.35), transparent 22%),
-    linear-gradient(135deg, #f7f1e8 0%, #ece3d3 100%);
+    radial-gradient(circle at 12% 14%, rgba(60, 132, 255, 0.28), transparent 24%),
+    radial-gradient(circle at 84% 18%, rgba(50, 90, 214, 0.2), transparent 18%),
+    radial-gradient(circle at 72% 82%, rgba(23, 138, 255, 0.16), transparent 24%),
+    linear-gradient(145deg, #081222 0%, #040a14 55%, #02060c 100%);
+  position: relative;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at center, black 35%, transparent 92%);
+  opacity: 0.38;
+}
+
+body::after {
+  background:
+    radial-gradient(circle at center, rgba(104, 183, 255, 0.1), transparent 46%);
+  opacity: 0.6;
 }
 
 .icon-sprite {
@@ -52,8 +81,9 @@ body {
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(255, 250, 243, 0.72);
-  box-shadow: var(--shadow);
+  background: rgba(12, 24, 43, 0.58);
+  backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: var(--shadow), var(--glow);
   font-size: 0.95rem;
 }
 
@@ -76,7 +106,8 @@ body {
   border-radius: 999px;
   font-size: 0.92rem;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(143, 195, 255, 0.1);
+  border: 1px solid rgba(173, 212, 255, 0.12);
   box-shadow: none;
 }
 
@@ -90,7 +121,8 @@ body {
   border-radius: 999px;
   font-size: 0.92rem;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(143, 195, 255, 0.1);
+  border: 1px solid rgba(173, 212, 255, 0.12);
   box-shadow: none;
 }
 
@@ -99,9 +131,9 @@ body {
 }
 
 .language-button.active {
-  color: white;
-  background: linear-gradient(135deg, var(--accent) 0%, #ff7c3f 100%);
-  box-shadow: 0 10px 24px rgba(255, 90, 54, 0.2);
+  color: #03101d;
+  background: linear-gradient(135deg, #9bd6ff 0%, #68b7ff 55%, #4e89ff 100%);
+  box-shadow: 0 10px 26px rgba(79, 155, 255, 0.28);
 }
 
 .hero {
@@ -151,8 +183,8 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 28px;
   background: var(--panel);
-  backdrop-filter: blur(14px);
-  box-shadow: var(--shadow);
+  backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: var(--shadow), var(--glow);
 }
 
 .status-card {
@@ -160,11 +192,11 @@ h1 {
 }
 
 .status-card.ready {
-  outline: 2px solid rgba(30, 122, 73, 0.18);
+  outline: 1px solid rgba(100, 223, 178, 0.28);
 }
 
 .status-card.missing {
-  outline: 2px solid rgba(177, 50, 50, 0.12);
+  outline: 1px solid rgba(255, 127, 150, 0.22);
 }
 
 .status-label {
@@ -233,13 +265,25 @@ select {
   border-radius: 18px;
   font: inherit;
   font-size: 1rem;
-  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  background: rgba(150, 194, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+input::placeholder {
+  color: rgba(154, 176, 202, 0.9);
+}
+
+select option {
+  color: var(--ink);
+  background: #0b1728;
 }
 
 input:focus,
 select:focus {
-  outline: 2px solid rgba(255, 90, 54, 0.32);
-  border-color: rgba(255, 90, 54, 0.4);
+  outline: 2px solid rgba(104, 183, 255, 0.34);
+  border-color: rgba(104, 183, 255, 0.4);
+  box-shadow: 0 0 0 4px rgba(104, 183, 255, 0.08);
 }
 
 button,
@@ -254,26 +298,27 @@ button,
   text-decoration: none;
   font-size: 1rem;
   font-weight: 700;
-  color: white;
-  background: linear-gradient(135deg, var(--accent) 0%, #ff7c3f 100%);
-  box-shadow: 0 14px 30px rgba(255, 90, 54, 0.22);
+  color: #04111e;
+  background: linear-gradient(135deg, #a8ddff 0%, #68b7ff 52%, #4c89ff 100%);
+  box-shadow: 0 18px 40px rgba(54, 123, 255, 0.28);
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .secondary-button {
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: none;
+  background: rgba(143, 195, 255, 0.1);
+  border: 1px solid rgba(173, 212, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 button:hover,
 .download-link:hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 34px rgba(255, 90, 54, 0.28);
+  box-shadow: 0 20px 42px rgba(54, 123, 255, 0.34);
 }
 
 .secondary-button:hover {
-  box-shadow: none;
+  box-shadow: 0 14px 30px rgba(4, 16, 35, 0.26);
 }
 
 .tip {
@@ -290,13 +335,15 @@ button:hover,
 }
 
 .message.error {
-  background: rgba(177, 50, 50, 0.1);
+  background: rgba(255, 127, 150, 0.12);
   color: var(--error);
+  border: 1px solid rgba(255, 127, 150, 0.18);
 }
 
 .message.success {
-  background: rgba(30, 122, 73, 0.09);
+  background: rgba(100, 223, 178, 0.1);
   color: var(--success);
+  border: 1px solid rgba(100, 223, 178, 0.16);
 }
 
 .warning {
@@ -348,7 +395,9 @@ button:hover,
   padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.52);
+  background: rgba(150, 194, 255, 0.08);
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .video-meta {
@@ -371,8 +420,8 @@ button:hover,
   min-height: 22px;
   padding: 0 8px;
   border-radius: 999px;
-  background: #d93a2f;
-  color: #fff;
+  background: linear-gradient(135deg, #84c8ff 0%, #4c89ff 100%);
+  color: #03101d;
   font-family: "Space Grotesk", sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
@@ -453,7 +502,7 @@ button:hover,
 
 .icon-status-button {
   cursor: pointer;
-  color: rgba(23, 23, 23, 0.38);
+  color: rgba(202, 223, 249, 0.48);
 }
 
 .icon-status-button:hover {
@@ -490,7 +539,8 @@ button:hover,
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(150, 194, 255, 0.08);
+  backdrop-filter: blur(18px);
 }
 
 .player-modal {
@@ -501,8 +551,8 @@ button:hover,
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(23, 23, 23, 0.62);
-  backdrop-filter: blur(8px);
+  background: rgba(2, 8, 18, 0.7);
+  backdrop-filter: blur(14px);
 }
 
 .player-dialog {
@@ -510,10 +560,11 @@ button:hover,
   max-height: calc(100vh - 48px);
   overflow: auto;
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(173, 212, 255, 0.12);
   border-radius: 28px;
-  background: rgba(19, 17, 15, 0.92);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  background: rgba(8, 18, 33, 0.78);
+  backdrop-filter: blur(24px) saturate(145%);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), var(--glow);
 }
 
 .player-head {
@@ -547,17 +598,18 @@ button:hover,
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(23, 23, 23, 0.48);
-  backdrop-filter: blur(8px);
+  background: rgba(2, 8, 18, 0.68);
+  backdrop-filter: blur(14px);
 }
 
 .status-dialog {
   width: min(520px, 100%);
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(173, 212, 255, 0.12);
   border-radius: 28px;
-  background: rgba(255, 249, 240, 0.96);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.24);
+  background: rgba(8, 18, 33, 0.78);
+  backdrop-filter: blur(24px) saturate(145%);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4), var(--glow);
 }
 
 .status-dialog-head {
@@ -613,7 +665,8 @@ button:hover,
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(150, 194, 255, 0.08);
+  backdrop-filter: blur(18px);
 }
 
 .progress-header {
@@ -638,14 +691,14 @@ button:hover,
   height: 14px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(23, 23, 23, 0.08);
+  background: rgba(173, 212, 255, 0.1);
 }
 
 .progress-bar {
   width: 0;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #ff5a36 0%, #f3aa2b 100%);
+  background: linear-gradient(90deg, #4f8fff 0%, #68b7ff 48%, #8fe0ff 100%);
   transition: width 240ms ease;
 }
 
@@ -710,8 +763,9 @@ button:hover,
     padding: 8px;
     border: 1px solid var(--line);
     border-radius: 18px;
-    background: rgba(255, 250, 243, 0.96);
-    box-shadow: var(--shadow);
+    background: rgba(8, 18, 33, 0.9);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow), var(--glow);
   }
 
   .language-picker.open .language-buttons {
