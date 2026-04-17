@@ -31,6 +31,7 @@ YTDLP_COOKIES_FILE = os.getenv("YTDLP_COOKIES_FILE", "").strip()
 YTDLP_REMOTE_COMPONENTS = os.getenv("YTDLP_REMOTE_COMPONENTS", "ejs:github").strip()
 STT_API_URL = os.getenv("STT_API_URL", "http://stt-service:8000").rstrip("/")
 STT_DEFAULT_MODEL = os.getenv("STT_DEFAULT_MODEL", "small").strip() or "small"
+API_VERSION = "1.0.0"
 
 YOUTUBE_HOSTS = {
     "youtube.com",
@@ -770,6 +771,18 @@ def find_latest_file(before: set[Path]) -> Path | None:
     return max(candidates, key=lambda item: item.stat().st_mtime)
 
 
+def find_existing_downloaded_file(output_lines: list[str]) -> Path | None:
+    pattern = re.compile(r"\[download\]\s+(?P<filename>.+?)\s+has already been downloaded")
+    for line in reversed(output_lines):
+        match = pattern.search(line)
+        if not match:
+            continue
+        candidate = DOWNLOADS_DIR / match.group("filename").strip()
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def parse_progress_line(line: str) -> tuple[float | None, str | None, str]:
     progress_match = re.search(r"\[download\]\s+(\d+(?:\.\d+)?)%", line)
     if progress_match:
@@ -828,6 +841,8 @@ def run_download_job(job_id: str, url: str, quality: str) -> None:
             return
 
         downloaded_file = find_latest_file(before)
+        if not downloaded_file:
+            downloaded_file = find_existing_downloaded_file(output_lines)
         if not downloaded_file:
             update_job(
                 job_id,
@@ -894,6 +909,429 @@ def build_runtime_warning() -> str | None:
     return " ".join(warnings)
 
 
+def build_api_spec() -> dict[str, Any]:
+    server_url = request.url_root.rstrip("/")
+    return {
+        "openapi": "3.0.3",
+        "info": {
+            "title": "YouTube to MP4 Agent API",
+            "version": API_VERSION,
+            "description": (
+                "HTTP API for AI agents and external platforms to submit YouTube download jobs, "
+                "inspect files, and trigger speech-to-text transcription."
+            ),
+        },
+        "servers": [{"url": server_url}],
+        "tags": [
+            {"name": "System", "description": "Service discovery and runtime capability endpoints."},
+            {"name": "Downloads", "description": "Create and inspect asynchronous download jobs."},
+            {"name": "Videos", "description": "List downloaded MP4 files and related transcript artifacts."},
+            {"name": "Transcriptions", "description": "Create and inspect speech-to-text jobs."},
+        ],
+        "paths": {
+            "/api/health": {
+                "get": {
+                    "tags": ["System"],
+                    "summary": "Service health check",
+                    "responses": {
+                        "200": {
+                            "description": "Current service readiness and runtime dependency state.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/HealthResponse"}
+                                }
+                            },
+                        }
+                    },
+                }
+            },
+            "/api/capabilities": {
+                "get": {
+                    "tags": ["System"],
+                    "summary": "Agent capability discovery",
+                    "responses": {
+                        "200": {
+                            "description": "Supported operations, models, and output capabilities.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/CapabilitiesResponse"}
+                                }
+                            },
+                        }
+                    },
+                }
+            },
+            "/api/v1/downloads": {
+                "post": {
+                    "tags": ["Downloads"],
+                    "summary": "Create a new YouTube download job",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/CreateDownloadRequest"},
+                                "examples": {
+                                    "default": {
+                                        "value": {
+                                            "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                                            "quality": "720p",
+                                        }
+                                    }
+                                },
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Download job accepted.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/CreateDownloadResponse"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Invalid request payload.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                }
+            },
+            "/api/v1/jobs/{job_id}": {
+                "get": {
+                    "tags": ["Downloads"],
+                    "summary": "Get download job status",
+                    "parameters": [
+                        {
+                            "in": "path",
+                            "name": "job_id",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Current job snapshot.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/DownloadJob"}
+                                }
+                            },
+                        },
+                        "404": {
+                            "description": "Unknown job id.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                }
+            },
+            "/api/v1/videos": {
+                "get": {
+                    "tags": ["Videos"],
+                    "summary": "List downloaded videos",
+                    "responses": {
+                        "200": {
+                            "description": "Downloaded MP4 files with transcript metadata.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ListVideosResponse"}
+                                }
+                            },
+                        }
+                    },
+                }
+            },
+            "/api/v1/transcriptions": {
+                "post": {
+                    "tags": ["Transcriptions"],
+                    "summary": "Create a transcription job for an existing MP4",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/CreateTranscriptionRequest"},
+                                "examples": {
+                                    "default": {
+                                        "value": {
+                                            "filename": "example-video.mp4",
+                                            "model": "small",
+                                        }
+                                    }
+                                },
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Transcription job accepted.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/TranscriptionJob"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Invalid request payload.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                }
+            },
+            "/api/v1/transcriptions/{job_id}": {
+                "get": {
+                    "tags": ["Transcriptions"],
+                    "summary": "Get transcription job status",
+                    "parameters": [
+                        {
+                            "in": "path",
+                            "name": "job_id",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Current transcription job snapshot.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/TranscriptionJob"}
+                                }
+                            },
+                        },
+                        "404": {
+                            "description": "Unknown transcription job id.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                }
+            },
+        },
+        "components": {
+            "schemas": {
+                "ErrorResponse": {
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string"},
+                        "error_key": {"type": "string"},
+                    },
+                    "required": ["error"],
+                },
+                "HealthResponse": {
+                    "type": "object",
+                    "properties": {
+                        "status": {"type": "string", "example": "ok"},
+                        "service": {"type": "string", "example": "youtube-to-mp4"},
+                        "version": {"type": "string", "example": API_VERSION},
+                        "yt_dlp_ready": {"type": "boolean"},
+                        "ffmpeg_ready": {"type": "boolean"},
+                        "stt_api_url": {"type": "string"},
+                        "stt_reachable": {"type": "boolean"},
+                    },
+                    "required": [
+                        "status",
+                        "service",
+                        "version",
+                        "yt_dlp_ready",
+                        "ffmpeg_ready",
+                        "stt_api_url",
+                        "stt_reachable",
+                    ],
+                },
+                "CapabilitiesResponse": {
+                    "type": "object",
+                    "properties": {
+                        "service": {"type": "string"},
+                        "version": {"type": "string"},
+                        "api_version": {"type": "string"},
+                        "download_qualities": {
+                            "type": "array",
+                            "items": {"type": "string", "enum": list(QUALITY_OPTIONS.keys())},
+                        },
+                        "transcription_models": {
+                            "type": "array",
+                            "items": {"type": "string", "enum": list(TRANSCRIPTION_MODELS.keys())},
+                        },
+                        "features": {
+                            "type": "object",
+                            "properties": {
+                                "download": {"type": "boolean"},
+                                "video_listing": {"type": "boolean"},
+                                "transcription": {"type": "boolean"},
+                                "swagger_docs": {"type": "boolean"},
+                                "cli": {"type": "boolean"},
+                            },
+                            "required": ["download", "video_listing", "transcription", "swagger_docs", "cli"],
+                        },
+                    },
+                    "required": [
+                        "service",
+                        "version",
+                        "api_version",
+                        "download_qualities",
+                        "transcription_models",
+                        "features",
+                    ],
+                },
+                "CreateDownloadRequest": {
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string", "format": "uri"},
+                        "quality": {"type": "string", "enum": list(QUALITY_OPTIONS.keys()), "default": "best"},
+                    },
+                    "required": ["url"],
+                },
+                "CreateDownloadResponse": {
+                    "type": "object",
+                    "properties": {
+                        "job_id": {"type": "string"},
+                        "status_url": {"type": "string"},
+                    },
+                    "required": ["job_id", "status_url"],
+                },
+                "DownloadJob": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "status": {"type": "string", "enum": ["queued", "running", "completed", "error"]},
+                        "progress": {"type": "number"},
+                        "status_key": {"type": "string"},
+                        "status_text": {"type": "string"},
+                        "title": {"type": "string", "nullable": True},
+                        "filename": {"type": "string", "nullable": True},
+                        "warning": {"type": "string", "nullable": True},
+                        "warning_keys": {"type": "array", "items": {"type": "string"}},
+                        "error": {"type": "string", "nullable": True},
+                        "error_key": {"type": "string", "nullable": True},
+                        "quality": {"type": "string"},
+                        "download_url": {"type": "string", "nullable": True},
+                    },
+                    "required": [
+                        "id",
+                        "status",
+                        "progress",
+                        "status_key",
+                        "status_text",
+                        "warning_keys",
+                        "quality",
+                    ],
+                },
+                "TranscriptDownloadMap": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "url": {"type": "string"},
+                            "filename": {"type": "string"},
+                        },
+                        "required": ["url", "filename"],
+                    },
+                },
+                "VideoFile": {
+                    "type": "object",
+                    "properties": {
+                        "filename": {"type": "string"},
+                        "title": {"type": "string"},
+                        "uploader": {"type": "string", "nullable": True},
+                        "youtube_url": {"type": "string", "nullable": True},
+                        "size_bytes": {"type": "integer"},
+                        "media_url": {"type": "string"},
+                        "download_url": {"type": "string"},
+                        "transcript_downloads": {"$ref": "#/components/schemas/TranscriptDownloadMap"},
+                        "captions_url": {"type": "string", "nullable": True},
+                        "is_transcribed": {"type": "boolean"},
+                    },
+                    "required": [
+                        "filename",
+                        "title",
+                        "size_bytes",
+                        "media_url",
+                        "download_url",
+                        "transcript_downloads",
+                        "is_transcribed",
+                    ],
+                },
+                "ListVideosResponse": {
+                    "type": "object",
+                    "properties": {
+                        "videos": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/VideoFile"},
+                        }
+                    },
+                    "required": ["videos"],
+                },
+                "CreateTranscriptionRequest": {
+                    "type": "object",
+                    "properties": {
+                        "filename": {"type": "string"},
+                        "model": {"type": "string", "enum": list(TRANSCRIPTION_MODELS.keys()), "default": STT_DEFAULT_MODEL},
+                    },
+                    "required": ["filename"],
+                },
+                "TranscriptionJob": {
+                    "type": "object",
+                    "properties": {
+                        "job_id": {"type": "string"},
+                        "status": {"type": "string"},
+                        "filename": {"type": "string", "nullable": True},
+                        "model": {"type": "string", "nullable": True},
+                        "error": {"type": "string", "nullable": True},
+                        "error_key": {"type": "string", "nullable": True},
+                        "output_files": {"type": "object", "additionalProperties": {"type": "string"}},
+                        "download_urls": {"type": "object", "additionalProperties": {"type": "string"}},
+                    },
+                },
+            }
+        },
+    }
+
+
+def build_health_payload() -> dict[str, Any]:
+    status_code, _ = stt_request("/health")
+    return {
+        "status": "ok",
+        "service": "youtube-to-mp4",
+        "version": API_VERSION,
+        "yt_dlp_ready": yt_dlp_exists(),
+        "ffmpeg_ready": ffmpeg_exists(),
+        "stt_api_url": STT_API_URL,
+        "stt_reachable": status_code == 200,
+    }
+
+
+def build_capabilities_payload() -> dict[str, Any]:
+    return {
+        "service": "youtube-to-mp4",
+        "version": API_VERSION,
+        "api_version": "v1",
+        "download_qualities": list(QUALITY_OPTIONS.keys()),
+        "transcription_models": list(TRANSCRIPTION_MODELS.keys()),
+        "features": {
+            "download": True,
+            "video_listing": True,
+            "transcription": True,
+            "swagger_docs": True,
+            "cli": True,
+        },
+    }
+
+
 @app.get("/")
 def index():
     return render_template(
@@ -906,6 +1344,27 @@ def index():
     )
 
 
+@app.get("/api/health")
+def health():
+    return jsonify(build_health_payload())
+
+
+@app.get("/api/capabilities")
+def capabilities():
+    return jsonify(build_capabilities_payload())
+
+
+@app.get("/api/openapi.json")
+def openapi_spec():
+    return jsonify(build_api_spec())
+
+
+@app.get("/api/docs")
+def api_docs():
+    return render_template("swagger.html", openapi_url="/api/openapi.json")
+
+
+@app.post("/api/v1/downloads")
 @app.post("/api/download")
 def download():
     payload = request.get_json(silent=True) or {}
@@ -920,13 +1379,14 @@ def download():
         update_job(job_id, quality=quality)
         worker = threading.Thread(target=run_download_job, args=(job_id, normalized_url, quality), daemon=True)
         worker.start()
-        return jsonify({"job_id": job_id})
+        return jsonify({"job_id": job_id, "status_url": f"/api/v1/jobs/{job_id}"})
     except ValueError as exc:
         return jsonify({"error": str(exc), "error_key": "error.invalid_url"}), 400
     except RuntimeError as exc:
         return jsonify({"error": str(exc), "error_key": "error.start_download"}), 500
 
 
+@app.get("/api/v1/jobs/<job_id>")
 @app.get("/api/jobs/<job_id>")
 def job_status(job_id: str):
     job = get_job(job_id)
@@ -938,11 +1398,13 @@ def job_status(job_id: str):
     return jsonify(job)
 
 
+@app.get("/api/v1/videos")
 @app.get("/api/videos")
 def videos():
     return jsonify({"videos": list_video_files()})
 
 
+@app.post("/api/v1/transcriptions")
 @app.post("/api/transcriptions")
 def create_transcription():
     payload = request.get_json(silent=True) or {}
@@ -959,6 +1421,7 @@ def create_transcription():
     return jsonify(data), status_code
 
 
+@app.get("/api/v1/transcriptions/<job_id>")
 @app.get("/api/transcriptions/<job_id>")
 def transcription_status(job_id: str):
     status_code, data = stt_request(f"/jobs/{job_id}")

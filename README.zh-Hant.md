@@ -29,6 +29,10 @@
 - 可從右上角按鈕列切換語言
 - 可將下載影片持久化儲存在容器外
 - 支援掛入 YouTube cookies 處理登入或反機器人驗證
+- 提供可供其他平台或 AI Agent 使用的 HTTP API
+- 提供 Swagger UI 與 OpenAPI JSON 文件
+- 提供 `python3 cli.py` CLI 介面
+- 提供 `python3 scripts/e2e_api_test.py` 端對端測試腳本
 
 ## 技術組成
 
@@ -123,6 +127,50 @@ Docker 會將這個檔案掛載到：
 - 程式會先把 cookies 複製到容器內可寫入的暫存位置，再交給 `yt-dlp`
 - container 也會預設啟用 `YTDLP_REMOTE_COMPONENTS=ejs:github`
 
+## Agent API 與 Swagger
+
+此專案提供可給其他平台或 AI Agent 串接的 API：
+
+- `GET /api/health`
+- `GET /api/capabilities`
+- `POST /api/v1/downloads`
+- `GET /api/v1/jobs/{job_id}`
+- `GET /api/v1/videos`
+- `POST /api/v1/transcriptions`
+- `GET /api/v1/transcriptions/{job_id}`
+
+相關文件：
+
+- Swagger UI：`/api/docs`
+- OpenAPI JSON：`/api/openapi.json`
+- 詳細說明：[docs/AGENT_API.md](docs/AGENT_API.md)
+
+## CLI
+
+範例：
+
+```bash
+python3 cli.py health
+python3 cli.py capabilities --json
+python3 cli.py videos --json
+python3 cli.py download "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --wait --json
+python3 cli.py transcribe "example-video.mp4" --wait --json
+```
+
+## 端對端測試腳本
+
+完整驗證 API 流程：
+
+```bash
+python3 scripts/e2e_api_test.py --base-url http://127.0.0.1:5000 --url "https://www.youtube.com/watch?v=89bhDV0FBSM"
+```
+
+若只想看摘要：
+
+```bash
+python3 scripts/e2e_api_test.py --base-url http://127.0.0.1:5000 --url "https://www.youtube.com/watch?v=89bhDV0FBSM" --summary-only
+```
+
 ## 本機開發
 
 如果你想不透過 Docker 直接執行：
@@ -151,11 +199,14 @@ brew install ffmpeg
 ```text
 .
 ├── app.py
+├── cli.py
 ├── Dockerfile
 ├── docker-compose.yml
+├── docs/
 ├── docker/
 │   └── stt/
 ├── requirements.txt
+├── scripts/
 ├── static/
 ├── templates/
 ├── assets/
