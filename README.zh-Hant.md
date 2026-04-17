@@ -1,0 +1,159 @@
+# YouTube to MP4 Downloader
+
+這是一個可在本機或 Docker 上運行的 YouTube 下載工具，支援：
+
+- Docker 部署
+- MP4 永久儲存
+- 畫質選擇
+- 即時下載進度
+- 繁中、簡中、英文、日文介面
+
+> 請只下載你有權限保存的內容，並自行遵守 YouTube 條款與著作權規範。
+
+## 預覽
+
+![App preview](assets/app-preview.svg)
+
+## 功能特色
+
+- 支援 YouTube `watch`、`youtu.be`、`shorts`、`embed` 網址
+- 可選擇下載畫質：`最佳可用畫質`、`1080p`、`720p`、`360p`
+- 下載時可看到即時進度與狀態文字
+- 安裝 `ffmpeg` 時可輸出合併後的 MP4
+- 可從右上角按鈕列切換語言
+- 可將下載影片持久化儲存在容器外
+- 支援掛入 YouTube cookies 處理登入或反機器人驗證
+
+## 技術組成
+
+- Python `Flask`
+- `yt-dlp`
+- `ffmpeg`
+- `nodejs`，用於 YouTube JavaScript runtime 解析
+- Docker / Docker Compose
+
+## Docker 快速啟動
+
+此專案已內建：
+
+- `Dockerfile`
+- `docker-compose.yml`
+- 永久儲存映射
+- cookies 掛載設定
+
+啟動方式：
+
+```bash
+docker-compose up --build -d
+```
+
+如果你的環境使用新版 Compose plugin：
+
+```bash
+docker compose up --build -d
+```
+
+啟動後請打開：
+
+```text
+http://127.0.0.1:5001
+```
+
+## 永久儲存 MP4
+
+下載完成的 MP4 會透過以下 bind mount 儲存在主機：
+
+```yaml
+volumes:
+  - ./video-storage:/data/downloads
+```
+
+這表示：
+
+- container 重啟後影片仍然保留
+- container 重建後影片仍然保留
+- 影片不會只存在容器內部檔案系統
+
+如果你想改成其他主機路徑，例如：
+
+```yaml
+volumes:
+  - /Users/yourname/Movies/youtube-downloads:/data/downloads
+```
+
+## YouTube Cookies 設定
+
+如果 YouTube 出現 `Sign in to confirm you're not a bot` 之類的訊息，請先匯出 YouTube cookies 的 Netscape 格式檔案，放到：
+
+```text
+./cookies/youtube.txt
+```
+
+Docker 會將這個檔案掛載到：
+
+```text
+/data/cookies/youtube.txt
+```
+
+補充：
+
+- compose 會將 cookies 目錄掛成唯讀
+- 程式會先把 cookies 複製到容器內可寫入的暫存位置，再交給 `yt-dlp`
+- container 也會預設啟用 `YTDLP_REMOTE_COMPONENTS=ejs:github`
+
+## 本機開發
+
+如果你想不透過 Docker 直接執行：
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 app.py
+```
+
+然後打開：
+
+```text
+http://127.0.0.1:5000
+```
+
+macOS 若要更完整支援 MP4 合併，可另外安裝：
+
+```bash
+brew install ffmpeg
+```
+
+## 專案結構
+
+```text
+.
+├── app.py
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── static/
+├── templates/
+├── assets/
+├── cookies/
+└── video-storage/
+```
+
+## 使用方式
+
+1. 在瀏覽器打開服務頁面。
+2. 貼上 YouTube 影片網址。
+3. 選擇你要的畫質。
+4. 按下載按鈕。
+5. 在畫面上查看即時進度與狀態文字。
+6. 下載完成後，從完成區塊下載 MP4 檔案。
+
+## 補充說明
+
+- 如果沒有 `ffmpeg`，程式會退回可直接下載的格式。
+- 如果有 `ffmpeg`，可將分離式影音串流合併為 MP4。
+- 某些影片仍可能因帳號、區域、年齡限制或反機器人驗證而需要有效 cookies。
+
+## 授權
+
+本專案採用 MIT License，詳見 [LICENSE](LICENSE)。
