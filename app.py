@@ -7,9 +7,12 @@ import subprocess
 import tempfile
 import threading
 import uuid
+import json
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
+from urllib import error as urllib_error
+from urllib import request as urllib_request
 
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
@@ -17,11 +20,15 @@ from flask import Flask, jsonify, render_template, request, send_from_directory
 BASE_DIR = Path(__file__).resolve().parent
 DOWNLOADS_DIR = Path(os.getenv("DOWNLOADS_DIR", str(BASE_DIR / "downloads"))).resolve()
 DOWNLOADS_DIR.mkdir(exist_ok=True)
+TRANSCRIPTS_DIR = Path(os.getenv("TRANSCRIPTS_DIR", str(BASE_DIR / "transcripts"))).resolve()
+TRANSCRIPTS_DIR.mkdir(exist_ok=True)
 APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
 APP_PORT = int(os.getenv("APP_PORT", "5000"))
 APP_DEBUG = os.getenv("APP_DEBUG", "false").lower() == "true"
 YTDLP_COOKIES_FILE = os.getenv("YTDLP_COOKIES_FILE", "").strip()
 YTDLP_REMOTE_COMPONENTS = os.getenv("YTDLP_REMOTE_COMPONENTS", "ejs:github").strip()
+STT_API_URL = os.getenv("STT_API_URL", "http://stt-service:8000").rstrip("/")
+STT_DEFAULT_MODEL = os.getenv("STT_DEFAULT_MODEL", "small").strip() or "small"
 
 YOUTUBE_HOSTS = {
     "youtube.com",
@@ -55,6 +62,10 @@ QUALITY_OPTIONS = {
         "ffmpeg_format": "bv*[height<=360][ext=mp4]+ba[ext=m4a]/b[height<=360][ext=mp4]/b[height<=360]/b",
         "direct_format": "b[height<=360][ext=mp4]/b[height<=360]/b",
     },
+}
+TRANSCRIPTION_MODELS = {
+    "small": {"label_key": "stt.model.small"},
+    "medium": {"label_key": "stt.model.medium"},
 }
 TRANSLATIONS = {
     "zh-Hant": {
@@ -106,6 +117,36 @@ TRANSLATIONS = {
         "warning.no_ffmpeg": "目前系統尚未安裝 ffmpeg，所以會優先下載可直接取得的 mp4 版本。",
         "warning.no_node": "目前系統尚未安裝 nodejs，YouTube 某些格式可能會抓不完整。",
         "warning.no_cookies": "若遇到 YouTube 要求登入驗證，請掛入 cookies 檔案。",
+        "stt.section_title": "影片轉文字",
+        "stt.section_intro": "針對已下載的 MP4 產生文字稿與字幕檔，使用獨立的 faster-whisper STT 容器。",
+        "stt.model_label": "轉錄模型",
+        "stt.model.small": "small",
+        "stt.model.medium": "medium",
+        "stt.refresh": "重新整理影片清單",
+        "stt.empty": "目前還沒有可供轉錄的 MP4 檔案。",
+        "stt.transcribe": "轉文字",
+        "stt.progress_title": "轉錄進度",
+        "stt.queued": "等待轉錄開始",
+        "stt.loading_model": "正在載入語音模型",
+        "stt.transcribing": "正在進行語音轉文字",
+        "stt.writing_files": "正在輸出轉錄檔案",
+        "stt.completed": "轉錄完成",
+        "stt.failed": "轉錄失敗",
+        "stt.download_txt": "下載 TXT",
+        "stt.download_srt": "下載 SRT",
+        "stt.download_vtt": "下載 VTT",
+        "stt.download_json": "下載 JSON",
+        "stt.result_title": "轉錄完成：",
+        "stt.result_files": "輸出檔案：",
+        "stt.play": "播放",
+        "stt.player_title": "影片播放與字幕驗證",
+        "stt.player_close": "關閉",
+        "stt.player_no_captions": "目前還沒有可用字幕，請先執行影片轉文字。",
+        "stt.player_with_captions": "已掛載字幕，可直接在播放器中驗證。",
+        "stt.error.fetch_videos": "無法取得影片清單。",
+        "stt.error.start": "無法啟動轉錄工作。",
+        "stt.error.status": "無法取得轉錄狀態。",
+        "stt.error.service_unavailable": "STT 服務目前無法連線。",
     },
     "zh-Hans": {
         "app.title": "YouTube to MP4 Downloader",
@@ -156,6 +197,36 @@ TRANSLATIONS = {
         "warning.no_ffmpeg": "当前系统尚未安装 ffmpeg，因此会优先下载可直接取得的 mp4 版本。",
         "warning.no_node": "当前系统尚未安装 nodejs，YouTube 某些格式可能无法完整抓取。",
         "warning.no_cookies": "若遇到 YouTube 要求登录验证，请挂载 cookies 文件。",
+        "stt.section_title": "视频转文字",
+        "stt.section_intro": "针对已下载的 MP4 生成文字稿与字幕文件，使用独立的 faster-whisper STT 容器。",
+        "stt.model_label": "转录模型",
+        "stt.model.small": "small",
+        "stt.model.medium": "medium",
+        "stt.refresh": "刷新视频列表",
+        "stt.empty": "目前还没有可供转录的 MP4 文件。",
+        "stt.transcribe": "转文字",
+        "stt.progress_title": "转录进度",
+        "stt.queued": "等待转录开始",
+        "stt.loading_model": "正在加载语音模型",
+        "stt.transcribing": "正在进行语音转文字",
+        "stt.writing_files": "正在输出转录文件",
+        "stt.completed": "转录完成",
+        "stt.failed": "转录失败",
+        "stt.download_txt": "下载 TXT",
+        "stt.download_srt": "下载 SRT",
+        "stt.download_vtt": "下载 VTT",
+        "stt.download_json": "下载 JSON",
+        "stt.result_title": "转录完成：",
+        "stt.result_files": "输出文件：",
+        "stt.play": "播放",
+        "stt.player_title": "视频播放与字幕验证",
+        "stt.player_close": "关闭",
+        "stt.player_no_captions": "目前还没有可用字幕，请先执行视频转文字。",
+        "stt.player_with_captions": "已挂载字幕，可直接在播放器中验证。",
+        "stt.error.fetch_videos": "无法取得视频列表。",
+        "stt.error.start": "无法启动转录任务。",
+        "stt.error.status": "无法取得转录状态。",
+        "stt.error.service_unavailable": "STT 服务当前无法连接。",
     },
     "en": {
         "app.title": "YouTube to MP4 Downloader",
@@ -206,6 +277,36 @@ TRANSLATIONS = {
         "warning.no_ffmpeg": "ffmpeg is not installed, so the app will prioritize MP4 formats that can be downloaded directly.",
         "warning.no_node": "nodejs is not installed, so some YouTube formats may be incomplete.",
         "warning.no_cookies": "If YouTube asks for sign-in verification, mount a cookies file.",
+        "stt.section_title": "Video To Text",
+        "stt.section_intro": "Generate transcripts and subtitle files from downloaded MP4 videos using a separate faster-whisper STT container.",
+        "stt.model_label": "Transcription Model",
+        "stt.model.small": "small",
+        "stt.model.medium": "medium",
+        "stt.refresh": "Refresh Video List",
+        "stt.empty": "There are no MP4 files available for transcription yet.",
+        "stt.transcribe": "Transcribe",
+        "stt.progress_title": "Transcription Progress",
+        "stt.queued": "Waiting to start transcription",
+        "stt.loading_model": "Loading speech model",
+        "stt.transcribing": "Running speech-to-text",
+        "stt.writing_files": "Writing transcript files",
+        "stt.completed": "Transcription completed",
+        "stt.failed": "Transcription failed",
+        "stt.download_txt": "Download TXT",
+        "stt.download_srt": "Download SRT",
+        "stt.download_vtt": "Download VTT",
+        "stt.download_json": "Download JSON",
+        "stt.result_title": "Transcription completed:",
+        "stt.result_files": "Output files:",
+        "stt.play": "Play",
+        "stt.player_title": "Video Playback And Caption Review",
+        "stt.player_close": "Close",
+        "stt.player_no_captions": "No captions are available yet. Run transcription first.",
+        "stt.player_with_captions": "Captions are attached and ready for review.",
+        "stt.error.fetch_videos": "Unable to fetch the video list.",
+        "stt.error.start": "Unable to start the transcription job.",
+        "stt.error.status": "Unable to fetch the transcription status.",
+        "stt.error.service_unavailable": "The STT service is currently unavailable.",
     },
     "ja": {
         "app.title": "YouTube to MP4 Downloader",
@@ -256,6 +357,36 @@ TRANSLATIONS = {
         "warning.no_ffmpeg": "ffmpeg が未インストールのため、直接取得できる mp4 形式を優先します。",
         "warning.no_node": "nodejs が未インストールのため、一部の YouTube 形式が不完全になる可能性があります。",
         "warning.no_cookies": "YouTube がサインイン確認を要求する場合は cookies ファイルをマウントしてください。",
+        "stt.section_title": "動画文字起こし",
+        "stt.section_intro": "ダウンロード済み MP4 から文字起こしと字幕ファイルを生成します。独立した faster-whisper STT コンテナを使用します。",
+        "stt.model_label": "文字起こしモデル",
+        "stt.model.small": "small",
+        "stt.model.medium": "medium",
+        "stt.refresh": "動画一覧を更新",
+        "stt.empty": "文字起こし可能な MP4 ファイルはまだありません。",
+        "stt.transcribe": "文字起こし",
+        "stt.progress_title": "文字起こし進捗",
+        "stt.queued": "文字起こし開始待ち",
+        "stt.loading_model": "音声モデルを読み込み中",
+        "stt.transcribing": "音声文字起こし中",
+        "stt.writing_files": "文字起こしファイルを書き出し中",
+        "stt.completed": "文字起こし完了",
+        "stt.failed": "文字起こし失敗",
+        "stt.download_txt": "TXT をダウンロード",
+        "stt.download_srt": "SRT をダウンロード",
+        "stt.download_vtt": "VTT をダウンロード",
+        "stt.download_json": "JSON をダウンロード",
+        "stt.result_title": "文字起こし完了：",
+        "stt.result_files": "出力ファイル：",
+        "stt.play": "再生",
+        "stt.player_title": "動画再生と字幕確認",
+        "stt.player_close": "閉じる",
+        "stt.player_no_captions": "利用可能な字幕はまだありません。先に文字起こしを実行してください。",
+        "stt.player_with_captions": "字幕を読み込み済みです。プレイヤー上で確認できます。",
+        "stt.error.fetch_videos": "動画一覧を取得できません。",
+        "stt.error.start": "文字起こしジョブを開始できません。",
+        "stt.error.status": "文字起こし状態を取得できません。",
+        "stt.error.service_unavailable": "STT サービスに接続できません。",
     },
 }
 
@@ -360,6 +491,41 @@ def create_job() -> tuple[str, dict[str, Any]]:
     with jobs_lock:
         download_jobs[job_id] = job
     return job_id, job
+
+
+def list_video_files() -> list[dict[str, Any]]:
+    videos: list[dict[str, Any]] = []
+    for path in sorted(DOWNLOADS_DIR.glob("*.mp4"), key=lambda item: item.stat().st_mtime, reverse=True):
+        vtt_path = TRANSCRIPTS_DIR / f"{path.stem}.vtt"
+        videos.append(
+            {
+                "filename": path.name,
+                "title": path.stem,
+                "size_bytes": path.stat().st_size,
+                "media_url": f"/media/{path.name}",
+                "captions_url": f"/transcripts/{vtt_path.name}" if vtt_path.is_file() else None,
+            }
+        )
+    return videos
+
+
+def stt_request(path: str, method: str = "GET", payload: dict[str, Any] | None = None) -> tuple[int, dict[str, Any]]:
+    data = None
+    headers = {}
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+
+    req = urllib_request.Request(f"{STT_API_URL}{path}", data=data, headers=headers, method=method)
+    try:
+        with urllib_request.urlopen(req, timeout=10) as response:
+            body = response.read().decode("utf-8")
+            return response.status, json.loads(body) if body else {}
+    except urllib_error.HTTPError as exc:
+        body = exc.read().decode("utf-8")
+        return exc.code, json.loads(body) if body else {"error": str(exc)}
+    except (urllib_error.URLError, TimeoutError):
+        return 503, {"error": "STT service unavailable", "error_key": "stt.error.service_unavailable"}
 
 
 def update_job(job_id: str, **changes: Any) -> None:
@@ -506,6 +672,7 @@ def index():
         yt_dlp_ready=yt_dlp_exists(),
         ffmpeg_ready=ffmpeg_exists(),
         quality_options=QUALITY_OPTIONS,
+        transcription_models=TRANSCRIPTION_MODELS,
         translations=TRANSLATIONS,
     )
 
@@ -542,9 +709,52 @@ def job_status(job_id: str):
     return jsonify(job)
 
 
+@app.get("/api/videos")
+def videos():
+    return jsonify({"videos": list_video_files()})
+
+
+@app.post("/api/transcriptions")
+def create_transcription():
+    payload = request.get_json(silent=True) or {}
+    filename = str(payload.get("filename", "")).strip()
+    model = str(payload.get("model", STT_DEFAULT_MODEL)).strip() or STT_DEFAULT_MODEL
+
+    if not filename:
+        return jsonify({"error": "filename is required", "error_key": "stt.error.start"}), 400
+
+    if not (DOWNLOADS_DIR / filename).is_file():
+        return jsonify({"error": "Source MP4 file not found.", "error_key": "stt.error.start"}), 404
+
+    status_code, data = stt_request("/jobs", method="POST", payload={"filename": filename, "model": model})
+    return jsonify(data), status_code
+
+
+@app.get("/api/transcriptions/<job_id>")
+def transcription_status(job_id: str):
+    status_code, data = stt_request(f"/jobs/{job_id}")
+    output_files = data.get("output_files", {})
+    if output_files:
+        data["download_urls"] = {
+            key: f"/transcripts/{value}"
+            for key, value in output_files.items()
+        }
+    return jsonify(data), status_code
+
+
 @app.get("/files/<path:filename>")
 def files(filename: str):
     return send_from_directory(DOWNLOADS_DIR, filename, as_attachment=True)
+
+
+@app.get("/media/<path:filename>")
+def media(filename: str):
+    return send_from_directory(DOWNLOADS_DIR, filename, as_attachment=False)
+
+
+@app.get("/transcripts/<path:filename>")
+def transcripts(filename: str):
+    return send_from_directory(TRANSCRIPTS_DIR, filename, as_attachment=True)
 
 
 if __name__ == "__main__":

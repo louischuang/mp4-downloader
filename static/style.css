@@ -158,6 +158,29 @@ h1 {
   padding: 28px;
 }
 
+.transcript-panel {
+  margin-top: 24px;
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-title {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.5rem;
+}
+
+.section-intro {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 .download-form label {
   display: block;
   margin-bottom: 14px;
@@ -208,10 +231,20 @@ button,
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
+.secondary-button {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: none;
+}
+
 button:hover,
 .download-link:hover {
   transform: translateY(-1px);
   box-shadow: 0 18px 34px rgba(255, 90, 54, 0.28);
+}
+
+.secondary-button:hover {
+  box-shadow: none;
 }
 
 .tip {
@@ -248,6 +281,112 @@ button:hover,
 .download-link {
   margin-top: 12px;
   width: fit-content;
+}
+
+.video-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.video-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.video-meta {
+  min-width: 0;
+}
+
+.video-meta strong,
+.video-meta span {
+  display: block;
+}
+
+.video-meta strong {
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.video-meta span {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.94rem;
+  overflow-wrap: anywhere;
+}
+
+.video-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.compact {
+  max-width: 320px;
+}
+
+.transcript-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.transcript-link {
+  margin-top: 0;
+}
+
+.player-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(23, 23, 23, 0.62);
+  backdrop-filter: blur(8px);
+}
+
+.player-dialog {
+  width: min(960px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  background: rgba(19, 17, 15, 0.92);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+}
+
+.player-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.player-head .section-title,
+.player-head .section-intro {
+  color: #f7f1e8;
+}
+
+.player-close {
+  flex-shrink: 0;
+}
+
+.player-video {
+  width: 100%;
+  border-radius: 22px;
+  background: black;
 }
 
 .progress-panel {
@@ -320,8 +459,19 @@ button:hover,
     flex-direction: column;
   }
 
+  .section-head,
+  .video-row,
+  .player-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   button,
   .download-link {
     width: 100%;
+  }
+
+  .player-modal {
+    padding: 16px;
   }
 }

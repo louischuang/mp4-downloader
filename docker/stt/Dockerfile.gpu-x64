@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1.7
+
+FROM --platform=linux/amd64 nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    HF_HOME=/models/huggingface \
+    STT_INPUT_DIR=/data/input \
+    STT_OUTPUT_DIR=/data/output
+
+WORKDIR /app
+
+# x64 + NVIDIA GPU target:
+# - intended for future deployment on RTX 5090 class hardware
+# - run container with: --gpus all
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        python3.11 \
+        python3.11-dev \
+        python3-pip \
+        python3.11-venv \
+        ffmpeg \
+        build-essential \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+
+RUN python -m pip install --upgrade pip \
+    && python -m pip install \
+        faster-whisper \
+        Flask \
+        huggingface-hub \
+        python-dotenv
+
+RUN mkdir -p /models/huggingface /data/input /data/output
+
+COPY docker/stt/server.py /app/server.py
+
+VOLUME ["/models/huggingface", "/data/input", "/data/output"]
+
+CMD ["python", "/app/server.py"]

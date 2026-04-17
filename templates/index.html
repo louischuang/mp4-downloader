@@ -94,6 +94,64 @@
           <a class="download-link" id="download-link" href="#" data-i18n="result.download">{{ translations['zh-Hant']['result.download'] }}</a>
         </div>
       </section>
+
+      <section class="panel transcript-panel">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title" data-i18n="stt.section_title">{{ translations['zh-Hant']['stt.section_title'] }}</h2>
+            <p class="section-intro" data-i18n="stt.section_intro">{{ translations['zh-Hant']['stt.section_intro'] }}</p>
+          </div>
+          <button type="button" class="secondary-button" id="refresh-videos" data-i18n="stt.refresh">{{ translations['zh-Hant']['stt.refresh'] }}</button>
+        </div>
+
+        <div class="field-stack compact">
+          <label for="transcription-model" data-i18n="stt.model_label">{{ translations['zh-Hant']['stt.model_label'] }}</label>
+          <select id="transcription-model" name="transcription-model">
+            {% for key, option in transcription_models.items() %}
+            <option value="{{ key }}" {{ 'selected' if key == 'small' else '' }}>
+              {{ translations['zh-Hant'][option.label_key] }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="video-list" id="video-list"></div>
+        <p class="tip hidden" id="video-empty" data-i18n="stt.empty">{{ translations['zh-Hant']['stt.empty'] }}</p>
+
+        <section class="progress-panel hidden" id="transcript-progress-panel">
+          <div class="progress-header">
+            <p class="progress-kicker" data-i18n="stt.progress_title">{{ translations['zh-Hant']['stt.progress_title'] }}</p>
+            <strong id="transcript-progress-percent">0%</strong>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-bar" id="transcript-progress-bar"></div>
+          </div>
+          <p class="progress-status" id="transcript-progress-status">{{ translations['zh-Hant']['stt.queued'] }}</p>
+        </section>
+
+        <div class="message error hidden" id="transcript-error-box"></div>
+
+        <div class="message success hidden" id="transcript-result-box">
+          <p><strong data-i18n="stt.result_title">{{ translations['zh-Hant']['stt.result_title'] }}</strong><span id="transcript-result-title"></span></p>
+          <p class="result-meta"><strong data-i18n="stt.result_files">{{ translations['zh-Hant']['stt.result_files'] }}</strong></p>
+          <div class="transcript-links" id="transcript-links"></div>
+        </div>
+      </section>
+
+      <section class="player-modal hidden" id="player-modal" aria-hidden="true">
+        <div class="player-dialog">
+          <div class="player-head">
+            <div>
+              <h2 class="section-title" data-i18n="stt.player_title">{{ translations['zh-Hant']['stt.player_title'] }}</h2>
+              <p class="section-intro" id="player-caption-status">{{ translations['zh-Hant']['stt.player_no_captions'] }}</p>
+            </div>
+            <button type="button" class="secondary-button player-close" id="player-close" data-i18n="stt.player_close">{{ translations['zh-Hant']['stt.player_close'] }}</button>
+          </div>
+          <video class="player-video" id="player-video" controls preload="metadata">
+            <track id="player-track" kind="subtitles" srclang="zh" label="Transcript captions" default />
+          </video>
+        </div>
+      </section>
     </main>
 
     <script>
@@ -112,10 +170,29 @@
       const resultQuality = document.getElementById("result-quality");
       const resultWarning = document.getElementById("result-warning");
       const downloadLink = document.getElementById("download-link");
+      const refreshVideosButton = document.getElementById("refresh-videos");
+      const videoList = document.getElementById("video-list");
+      const videoEmpty = document.getElementById("video-empty");
+      const transcriptionModel = document.getElementById("transcription-model");
+      const transcriptProgressPanel = document.getElementById("transcript-progress-panel");
+      const transcriptProgressBar = document.getElementById("transcript-progress-bar");
+      const transcriptProgressPercent = document.getElementById("transcript-progress-percent");
+      const transcriptProgressStatus = document.getElementById("transcript-progress-status");
+      const transcriptErrorBox = document.getElementById("transcript-error-box");
+      const transcriptResultBox = document.getElementById("transcript-result-box");
+      const transcriptResultTitle = document.getElementById("transcript-result-title");
+      const transcriptLinks = document.getElementById("transcript-links");
+      const playerModal = document.getElementById("player-modal");
+      const playerClose = document.getElementById("player-close");
+      const playerVideo = document.getElementById("player-video");
+      const playerTrack = document.getElementById("player-track");
+      const playerCaptionStatus = document.getElementById("player-caption-status");
       const qualityLabelMap = {{ quality_options | tojson }};
+      const transcriptionModelMap = {{ transcription_models | tojson }};
 
       let pollTimer = null;
       let currentLocale = localStorage.getItem("ytmp4_locale") || fallbackLocale;
+      let transcriptPollTimer = null;
 
       function t(key, fallback = "") {
         return translations[currentLocale]?.[key] || translations[fallbackLocale]?.[key] || fallback || key;
@@ -148,6 +225,12 @@
             option.textContent = t(labelKey, option.textContent);
           }
         });
+        Array.from(transcriptionModel.options).forEach((option) => {
+          const labelKey = transcriptionModelMap[option.value]?.label_key;
+          if (labelKey) {
+            option.textContent = t(labelKey, option.textContent);
+          }
+        });
         languageButtons.forEach((button) => {
           const language = button.dataset.language;
           button.textContent = t(`lang.${language}`, button.textContent);
@@ -158,6 +241,16 @@
       function showError(message) {
         errorBox.textContent = message;
         errorBox.classList.remove("hidden");
+      }
+
+      function showTranscriptError(message) {
+        transcriptErrorBox.textContent = message;
+        transcriptErrorBox.classList.remove("hidden");
+      }
+
+      function hideTranscriptError() {
+        transcriptErrorBox.textContent = "";
+        transcriptErrorBox.classList.add("hidden");
       }
 
       function hideError() {
@@ -174,12 +267,50 @@
         downloadLink.href = "#";
       }
 
+      function hideTranscriptResult() {
+        transcriptResultBox.classList.add("hidden");
+        transcriptResultTitle.textContent = "";
+        transcriptLinks.innerHTML = "";
+      }
+
+      function closePlayerModal() {
+        playerVideo.pause();
+        playerVideo.removeAttribute("src");
+        playerTrack.removeAttribute("src");
+        playerVideo.load();
+        playerCaptionStatus.textContent = t("stt.player_no_captions");
+        playerModal.classList.add("hidden");
+        playerModal.setAttribute("aria-hidden", "true");
+      }
+
+      function openPlayerModal(video) {
+        playerVideo.src = video.media_url;
+        if (video.captions_url) {
+          playerTrack.src = video.captions_url;
+          playerCaptionStatus.textContent = t("stt.player_with_captions");
+        } else {
+          playerTrack.removeAttribute("src");
+          playerCaptionStatus.textContent = t("stt.player_no_captions");
+        }
+        playerVideo.load();
+        playerModal.classList.remove("hidden");
+        playerModal.setAttribute("aria-hidden", "false");
+      }
+
       function updateProgress(progress, statusText) {
         const safeProgress = Math.max(0, Math.min(100, Number(progress) || 0));
         progressPanel.classList.remove("hidden");
         progressBar.style.width = `${safeProgress}%`;
         progressPercent.textContent = `${safeProgress.toFixed(1)}%`;
         progressStatus.textContent = statusText || t("progress.processing");
+      }
+
+      function updateTranscriptProgress(progress, statusText) {
+        const safeProgress = Math.max(0, Math.min(100, Number(progress) || 0));
+        transcriptProgressPanel.classList.remove("hidden");
+        transcriptProgressBar.style.width = `${safeProgress}%`;
+        transcriptProgressPercent.textContent = `${safeProgress.toFixed(1)}%`;
+        transcriptProgressStatus.textContent = statusText || t("stt.queued");
       }
 
       async function pollJob(jobId) {
@@ -199,6 +330,7 @@
           resultTitle.textContent = data.title || data.filename || "影片";
           resultQuality.textContent = t(qualityLabelMap[data.quality]?.label_key || "", data.quality || "");
           downloadLink.href = data.download_url;
+          loadVideos();
           const warningText = localizeWarningKeys(data.warning_keys) || data.warning || "";
           if (warningText) {
             resultWarning.textContent = warningText;
@@ -211,6 +343,135 @@
           submitButton.disabled = false;
           clearInterval(pollTimer);
           showError(localizeError(data));
+        }
+      }
+
+      function renderTranscriptLinks(downloadUrls) {
+        transcriptLinks.innerHTML = "";
+        ["txt", "srt", "vtt", "json"].forEach((key) => {
+          if (!downloadUrls?.[key]) {
+            return;
+          }
+          const link = document.createElement("a");
+          link.className = "download-link transcript-link";
+          link.href = downloadUrls[key];
+          link.textContent = t(`stt.download_${key}`, key.toUpperCase());
+          transcriptLinks.appendChild(link);
+        });
+      }
+
+      async function pollTranscriptJob(jobId, title) {
+        const response = await fetch(`/api/transcriptions/${jobId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(localizeError(data));
+        }
+
+        const translatedStatus = data.status_key ? t(data.status_key) : data.status_text;
+        updateTranscriptProgress(data.progress, translatedStatus || data.status_text);
+
+        if (data.status === "completed") {
+          clearInterval(transcriptPollTimer);
+          transcriptResultTitle.textContent = title;
+          renderTranscriptLinks(data.download_urls);
+          transcriptResultBox.classList.remove("hidden");
+          loadVideos();
+        }
+
+        if (data.status === "error") {
+          clearInterval(transcriptPollTimer);
+          showTranscriptError(localizeError(data));
+        }
+      }
+
+      function renderVideoList(videos) {
+        videoList.innerHTML = "";
+        if (!videos.length) {
+          videoEmpty.classList.remove("hidden");
+          return;
+        }
+
+        videoEmpty.classList.add("hidden");
+        videos.forEach((video) => {
+          const row = document.createElement("div");
+          row.className = "video-row";
+
+          const meta = document.createElement("div");
+          meta.className = "video-meta";
+
+          const title = document.createElement("strong");
+          title.textContent = video.title;
+          const filename = document.createElement("span");
+          filename.textContent = video.filename;
+          meta.appendChild(title);
+          meta.appendChild(filename);
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "secondary-button";
+          button.textContent = t("stt.transcribe");
+          button.addEventListener("click", async () => {
+            clearInterval(transcriptPollTimer);
+            hideTranscriptError();
+            hideTranscriptResult();
+            updateTranscriptProgress(0, t("stt.queued"));
+
+            const response = await fetch("/api/transcriptions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                filename: video.filename,
+                model: transcriptionModel.value,
+              }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+              showTranscriptError(localizeError(data));
+              return;
+            }
+
+            transcriptPollTimer = setInterval(() => {
+              pollTranscriptJob(data.job_id, video.title).catch((error) => {
+                clearInterval(transcriptPollTimer);
+                showTranscriptError(error.message || t("stt.error.status"));
+              });
+            }, 1000);
+
+            await pollTranscriptJob(data.job_id, video.title);
+          });
+
+          const playButton = document.createElement("button");
+          playButton.type = "button";
+          playButton.className = "secondary-button";
+          playButton.textContent = t("stt.play");
+          playButton.addEventListener("click", () => {
+            openPlayerModal(video);
+          });
+
+          const actions = document.createElement("div");
+          actions.className = "video-actions";
+          actions.appendChild(playButton);
+          actions.appendChild(button);
+
+          row.appendChild(meta);
+          row.appendChild(actions);
+          videoList.appendChild(row);
+        });
+      }
+
+      async function loadVideos() {
+        hideTranscriptError();
+        try {
+          const response = await fetch("/api/videos");
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(t("stt.error.fetch_videos"));
+          }
+          renderVideoList(data.videos || []);
+        } catch (error) {
+          showTranscriptError(error.message || t("stt.error.fetch_videos"));
         }
       }
 
@@ -257,12 +518,26 @@
 
       currentLocale = translations[currentLocale] ? currentLocale : fallbackLocale;
       applyTranslations();
+      loadVideos();
       languageButtons.forEach((button) => {
         button.addEventListener("click", () => {
           currentLocale = button.dataset.language;
           localStorage.setItem("ytmp4_locale", currentLocale);
           applyTranslations();
+          loadVideos();
         });
+      });
+      refreshVideosButton.addEventListener("click", loadVideos);
+      playerClose.addEventListener("click", closePlayerModal);
+      playerModal.addEventListener("click", (event) => {
+        if (event.target === playerModal) {
+          closePlayerModal();
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !playerModal.classList.contains("hidden")) {
+          closePlayerModal();
+        }
       });
     </script>
   </body>

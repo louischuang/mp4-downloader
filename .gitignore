@@ -4,3 +4,5 @@ __pycache__/
 cookies/
 video-storage/
 downloads/
+models/
+transcripts/
