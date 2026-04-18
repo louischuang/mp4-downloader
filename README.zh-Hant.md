@@ -26,6 +26,8 @@
 - 下載時可看到即時進度與狀態文字，完成後只保留完成彈窗
 - 影片列表可播放本機 MP4、開啟原始 YouTube 網址、下載 MP4 或字幕檔
 - 支援本機 `faster-whisper` 轉文字，輸出 `txt`、`srt`、`vtt`、`json`
+- 可直接在瀏覽器中編輯產生出的 `srt` 字幕
+- 可從影片列表工具列產生燒錄字幕的新 MP4
 - 轉文字進度會顯示在各自影片列內，不與下載進度共用
 - 最新加入的影片會在標題前顯示紅色 `NEW` 標記
 - 安裝 `ffmpeg` 時可輸出合併後的 MP4
@@ -142,6 +144,9 @@ Docker 會將這個檔案掛載到：
 - `GET /api/v1/videos`
 - `POST /api/v1/transcriptions`
 - `GET /api/v1/transcriptions/{job_id}`
+- `POST /api/v1/burned-videos`
+- `GET /api/v1/subtitles/{filename}`
+- `PUT /api/v1/subtitles/{filename}`
 
 相關文件：
 
@@ -235,11 +240,14 @@ brew install ffmpeg
    - 下載 MP4
    - 下載 `txt` / `srt` / `vtt` / `json`
    - 重新轉文字
+9. 若字幕內容需要修正，可使用 `編輯字幕` 直接修改 `srt` 並儲存。
+10. 儲存字幕後，可使用 `產生燒錄 MP4` 重新輸出帶字幕的新影片。
 
 ## 補充說明
 
 - 如果沒有 `ffmpeg`，程式會退回可直接下載的格式。
 - 如果有 `ffmpeg`，可將分離式影音串流合併為 MP4。
+- 燒錄字幕 MP4 也需要 `ffmpeg` 才能使用。
 - 第一次執行 `faster-whisper` 時，會先下載模型到 `./models`，之後同模型會直接使用快取。
 - 某些影片仍可能因帳號、區域、年齡限制或反機器人驗證而需要有效 cookies。
 

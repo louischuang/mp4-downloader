@@ -11,7 +11,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg nodejs npm \
+    && apt-get install -y --no-install-recommends ffmpeg nodejs npm fonts-noto-cjk fontconfig \
+    && fc-cache -f \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

@@ -35,6 +35,14 @@
       <symbol id="icon-close" viewBox="0 0 24 24">
         <path d="M7 7l10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path>
       </symbol>
+      <symbol id="icon-burn" viewBox="0 0 24 24">
+        <path d="M13.5 4.5c.2 1.7-.6 2.8-1.9 4.1c-1.5 1.5-2.6 2.9-2.6 5a4 4 0 0 0 8 0c0-1.8-.9-3.2-2.2-4.7c-.8-.9-1.5-1.9-1.3-4.4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M12.2 12.1c.8 1 .8 1.8.4 2.6c-.4.7-.3 1.4.4 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+      </symbol>
+      <symbol id="icon-edit" viewBox="0 0 24 24">
+        <path d="M4.5 19.5h3.2l8.9-8.9-3.2-3.2-8.9 8.9v3.2Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="m12.7 7.3 3.2 3.2M14.6 5.4l1.7-1.7a1.6 1.6 0 0 1 2.3 0l1.7 1.7a1.6 1.6 0 0 1 0 2.3l-1.7 1.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+      </symbol>
     </svg>
     <main class="shell">
       <div class="topbar">
@@ -247,6 +255,34 @@
           </div>
         </div>
       </section>
+
+      <section class="status-modal hidden" id="subtitle-editor-modal" aria-hidden="true">
+        <div class="status-dialog subtitle-editor-dialog">
+          <div class="status-dialog-head">
+            <div>
+              <h2 class="section-title" data-i18n="subtitle.editor_title">{{ translations['zh-Hant']['subtitle.editor_title'] }}</h2>
+              <p class="section-intro" id="subtitle-editor-intro">{{ translations['zh-Hant']['subtitle.editor_intro'] }}</p>
+            </div>
+            <button type="button" class="modal-close-button" id="subtitle-editor-close" aria-label="{{ translations['zh-Hant']['subtitle.editor_cancel'] }}" title="{{ translations['zh-Hant']['subtitle.editor_cancel'] }}">
+              <svg class="action-icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+            </button>
+          </div>
+          <div class="field-stack">
+            <textarea
+              id="subtitle-editor-textarea"
+              class="subtitle-editor-textarea"
+              spellcheck="false"
+              data-i18n-placeholder="subtitle.editor_placeholder"
+              placeholder="{{ translations['zh-Hant']['subtitle.editor_placeholder'] }}"
+            ></textarea>
+          </div>
+          <div class="message error hidden" id="subtitle-editor-error"></div>
+          <div class="confirm-actions">
+            <button type="button" class="secondary-button" id="subtitle-editor-cancel" data-i18n="subtitle.editor_cancel">{{ translations['zh-Hant']['subtitle.editor_cancel'] }}</button>
+            <button type="button" id="subtitle-editor-save" data-i18n="subtitle.editor_save">{{ translations['zh-Hant']['subtitle.editor_save'] }}</button>
+          </div>
+        </div>
+      </section>
     </main>
 
     <script>
@@ -290,6 +326,13 @@
       const retranscribeMessage = document.getElementById("retranscribe-message");
       const retranscribeCancel = document.getElementById("retranscribe-cancel");
       const retranscribeConfirm = document.getElementById("retranscribe-confirm");
+      const subtitleEditorModal = document.getElementById("subtitle-editor-modal");
+      const subtitleEditorIntro = document.getElementById("subtitle-editor-intro");
+      const subtitleEditorClose = document.getElementById("subtitle-editor-close");
+      const subtitleEditorCancel = document.getElementById("subtitle-editor-cancel");
+      const subtitleEditorSave = document.getElementById("subtitle-editor-save");
+      const subtitleEditorTextarea = document.getElementById("subtitle-editor-textarea");
+      const subtitleEditorError = document.getElementById("subtitle-editor-error");
       const qualityLabelMap = {{ quality_options | tojson }};
       const transcriptionModelMap = {{ transcription_models | tojson }};
 
@@ -299,8 +342,11 @@
       let currentCompletionMessageKey = null;
       let currentDownloadVideo = null;
       let currentRetranscribeVideo = null;
+      let currentSubtitleEditorVideo = null;
       const transcriptionStateByFile = {};
       const transcriptionPollers = {};
+      const burnStateByFile = {};
+      const burnPollers = {};
 
       function t(key, fallback = "") {
         return translations[currentLocale]?.[key] || translations[fallbackLocale]?.[key] || fallback || key;
@@ -378,11 +424,16 @@
         downloadModalClose.setAttribute("title", t("download.modal_close"));
         retranscribeCancel.setAttribute("aria-label", t("retranscribe.cancel"));
         retranscribeCancel.setAttribute("title", t("retranscribe.cancel"));
+        subtitleEditorClose.setAttribute("aria-label", t("subtitle.editor_cancel"));
+        subtitleEditorClose.setAttribute("title", t("subtitle.editor_cancel"));
         if (currentCompletionMessageKey) {
           completionMessage.textContent = t(currentCompletionMessageKey);
         }
         if (currentRetranscribeVideo) {
           retranscribeMessage.textContent = tFormat("retranscribe.message", { title: currentRetranscribeVideo.title });
+        }
+        if (currentSubtitleEditorVideo) {
+          subtitleEditorIntro.textContent = `${t("subtitle.editor_intro")} ${currentSubtitleEditorVideo.title}`;
         }
       }
 
@@ -466,6 +517,24 @@
         currentRetranscribeVideo = null;
         retranscribeModal.classList.add("hidden");
         retranscribeModal.setAttribute("aria-hidden", "true");
+      }
+
+      function showSubtitleEditorError(message) {
+        subtitleEditorError.textContent = message;
+        subtitleEditorError.classList.remove("hidden");
+      }
+
+      function hideSubtitleEditorError() {
+        subtitleEditorError.textContent = "";
+        subtitleEditorError.classList.add("hidden");
+      }
+
+      function closeSubtitleEditorModal() {
+        currentSubtitleEditorVideo = null;
+        subtitleEditorTextarea.value = "";
+        hideSubtitleEditorError();
+        subtitleEditorModal.classList.add("hidden");
+        subtitleEditorModal.setAttribute("aria-hidden", "true");
       }
 
       function buildIcon(iconName) {
@@ -666,6 +735,22 @@
         }
       }
 
+      function setBurnState(filename, updates) {
+        burnStateByFile[filename] = {
+          ...(burnStateByFile[filename] || {}),
+          ...updates,
+        };
+        renderVideoList(currentVideos);
+      }
+
+      function clearBurnState(filename) {
+        delete burnStateByFile[filename];
+        if (burnPollers[filename]) {
+          clearTimeout(burnPollers[filename]);
+          delete burnPollers[filename];
+        }
+      }
+
       async function pollTranscriptJob(jobId, video) {
         const response = await fetch(`/api/transcriptions/${jobId}`);
         const data = await response.json();
@@ -755,6 +840,137 @@
         return await monitorTranscriptJob(data.job_id, video);
       }
 
+      async function pollBurnJob(jobId, video) {
+        const response = await fetch(`/api/jobs/${jobId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(localizeError(data));
+        }
+
+        setBurnState(video.filename, {
+          active: true,
+          progress: data.progress,
+          statusText: data.status_key ? t(data.status_key) : (data.status_text || t("burn.rendering")),
+        });
+
+        if (data.status === "completed") {
+          clearBurnState(video.filename);
+          loadVideos();
+        }
+
+        if (data.status === "error") {
+          clearBurnState(video.filename);
+          showTranscriptError(localizeError(data));
+        }
+
+        return data;
+      }
+
+      async function monitorBurnJob(jobId, video) {
+        return await new Promise((resolve) => {
+          const poll = async () => {
+            try {
+              const jobData = await pollBurnJob(jobId, video);
+              if (jobData.status === "running" || jobData.status === "queued") {
+                burnPollers[video.filename] = setTimeout(poll, 1000);
+                return;
+              }
+              resolve(jobData.status === "completed");
+            } catch (error) {
+              clearBurnState(video.filename);
+              showTranscriptError(error.message || t("burn.error.start"));
+              resolve(false);
+            }
+          };
+
+          poll();
+        });
+      }
+
+      async function startBurnedVideo(video) {
+        hideTranscriptError();
+        setBurnState(video.filename, {
+          active: true,
+          progress: 0,
+          statusText: t("burn.preparing"),
+        });
+
+        const response = await fetch("/api/burned-videos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: video.filename,
+          }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          clearBurnState(video.filename);
+          showTranscriptError(localizeError(data));
+          return false;
+        }
+
+        const completed = await monitorBurnJob(data.job_id, video);
+        if (completed) {
+          openCompletionModal("modal.completed_burned_video");
+        }
+        return completed;
+      }
+
+      async function openSubtitleEditor(video) {
+        currentSubtitleEditorVideo = video;
+        hideSubtitleEditorError();
+        subtitleEditorTextarea.value = "";
+        subtitleEditorIntro.textContent = `${t("subtitle.editor_intro")} ${video.title}`;
+        subtitleEditorModal.classList.remove("hidden");
+        subtitleEditorModal.setAttribute("aria-hidden", "false");
+        subtitleEditorSave.disabled = true;
+
+        try {
+          const response = await fetch(`/api/subtitles/${encodeURIComponent(video.filename)}`);
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(localizeError(data));
+          }
+          subtitleEditorTextarea.value = data.content || "";
+        } catch (error) {
+          showSubtitleEditorError(error.message || t("subtitle.error.fetch"));
+        } finally {
+          subtitleEditorSave.disabled = false;
+        }
+      }
+
+      async function saveSubtitleEditor() {
+        if (!currentSubtitleEditorVideo) {
+          return;
+        }
+
+        hideSubtitleEditorError();
+        subtitleEditorSave.disabled = true;
+
+        try {
+          const response = await fetch(`/api/subtitles/${encodeURIComponent(currentSubtitleEditorVideo.filename)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: subtitleEditorTextarea.value,
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(localizeError(data));
+          }
+          closeSubtitleEditorModal();
+          openCompletionModal("modal.completed_subtitle_save");
+          await loadVideos();
+        } catch (error) {
+          showSubtitleEditorError(error.message || t("subtitle.error.save"));
+        } finally {
+          subtitleEditorSave.disabled = false;
+        }
+      }
+
       function renderVideoList(videos) {
         videoList.innerHTML = "";
         if (!videos.length) {
@@ -764,6 +980,7 @@
 
         videoEmpty.classList.add("hidden");
         videos.forEach((video, index) => {
+          const hasBurnableSubtitles = Boolean(video.transcript_downloads?.srt?.url);
           const row = document.createElement("div");
           row.className = "video-row";
 
@@ -793,6 +1010,7 @@
           }
 
           const transcriptionState = transcriptionStateByFile[video.filename];
+          const burnState = burnStateByFile[video.filename];
           const footer = document.createElement("div");
           footer.className = "video-footer";
 
@@ -819,6 +1037,21 @@
             openDownloadModal(video);
           });
           actions.appendChild(downloadButton);
+
+          if (hasBurnableSubtitles) {
+            const editButton = createIconButton("edit", t("action.edit_subtitles"));
+            editButton.addEventListener("click", async () => {
+              await openSubtitleEditor(video);
+            });
+            actions.appendChild(editButton);
+
+            const burnButton = createIconButton("burn", t("action.burn_subtitles"));
+            burnButton.disabled = Boolean(burnState?.active);
+            burnButton.addEventListener("click", async () => {
+              await startBurnedVideo(video);
+            });
+            actions.appendChild(burnButton);
+          }
 
           if (video.is_transcribed) {
             const status = createIconButton("check", t("action.retranscribe"), "secondary-button icon-status-button");
@@ -863,6 +1096,38 @@
             const rowStatus = document.createElement("p");
             rowStatus.className = "progress-status";
             rowStatus.textContent = transcriptionState.statusText || t("stt.queued");
+
+            rowProgress.appendChild(rowHeader);
+            rowProgress.appendChild(rowTrack);
+            rowProgress.appendChild(rowStatus);
+            meta.appendChild(rowProgress);
+          }
+
+          if (burnState?.active) {
+            const rowProgress = document.createElement("div");
+            rowProgress.className = "row-progress";
+
+            const rowHeader = document.createElement("div");
+            rowHeader.className = "progress-header";
+            const rowKicker = document.createElement("p");
+            rowKicker.className = "progress-kicker";
+            rowKicker.textContent = t("burn.progress_title");
+            const rowPercent = document.createElement("strong");
+            rowPercent.textContent = `${(Number(burnState.progress) || 0).toFixed(1)}%`;
+            rowHeader.appendChild(rowKicker);
+            rowHeader.appendChild(rowPercent);
+
+            const rowTrack = document.createElement("div");
+            rowTrack.className = "progress-track";
+            rowTrack.setAttribute("aria-hidden", "true");
+            const rowBar = document.createElement("div");
+            rowBar.className = "progress-bar";
+            rowBar.style.width = `${Math.max(0, Math.min(100, Number(burnState.progress) || 0))}%`;
+            rowTrack.appendChild(rowBar);
+
+            const rowStatus = document.createElement("p");
+            rowStatus.className = "progress-status";
+            rowStatus.textContent = burnState.statusText || t("burn.preparing");
 
             rowProgress.appendChild(rowHeader);
             rowProgress.appendChild(rowTrack);
@@ -1066,6 +1331,9 @@
         }
       });
       retranscribeCancel.addEventListener("click", closeRetranscribeModal);
+      subtitleEditorClose.addEventListener("click", closeSubtitleEditorModal);
+      subtitleEditorCancel.addEventListener("click", closeSubtitleEditorModal);
+      subtitleEditorSave.addEventListener("click", saveSubtitleEditor);
       retranscribeConfirm.addEventListener("click", async () => {
         if (!currentRetranscribeVideo) {
           return;
@@ -1077,6 +1345,11 @@
       retranscribeModal.addEventListener("click", (event) => {
         if (event.target === retranscribeModal) {
           closeRetranscribeModal();
+        }
+      });
+      subtitleEditorModal.addEventListener("click", (event) => {
+        if (event.target === subtitleEditorModal) {
+          closeSubtitleEditorModal();
         }
       });
       document.addEventListener("keydown", (event) => {
@@ -1091,6 +1364,9 @@
         }
         if (event.key === "Escape" && !retranscribeModal.classList.contains("hidden")) {
           closeRetranscribeModal();
+        }
+        if (event.key === "Escape" && !subtitleEditorModal.classList.contains("hidden")) {
+          closeSubtitleEditorModal();
         }
       });
     </script>

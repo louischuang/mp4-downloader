@@ -27,6 +27,8 @@ A local web app and agent-friendly API for downloading YouTube videos, convertin
 - See live status while downloading or transcribing
 - Play local MP4 files, open the original YouTube page, and download generated files
 - Generate `txt`, `srt`, `vtt`, and `json` transcript outputs
+- Edit generated `srt` subtitles directly in the browser
+- Generate a new MP4 with burned-in subtitles from the video list toolbar
 - Switch UI language from the top-right button bar
 - Persist downloaded files, transcripts, and model cache outside the container
 - Support YouTube cookies for sign-in / anti-bot verification flows
@@ -146,6 +148,9 @@ The project includes an agent-friendly HTTP API:
 - `GET /api/v1/videos`
 - `POST /api/v1/transcriptions`
 - `GET /api/v1/transcriptions/{job_id}`
+- `POST /api/v1/burned-videos`
+- `GET /api/v1/subtitles/{filename}`
+- `PUT /api/v1/subtitles/{filename}`
 
 Related docs:
 
@@ -234,11 +239,14 @@ brew install ffmpeg
 6. Watch the live progress bar and status text.
 7. After download or upload, the STT job starts automatically when transcription is enabled or when using MP4 upload.
 8. From the video list, you can play the video, open the original URL, download MP4, or download `txt` / `srt` / `vtt` / `json`.
+9. If the transcript needs corrections, open `Edit Subtitles`, update the `srt`, and save it in the browser.
+10. Use `Burn Subtitles MP4` to create a new MP4 with subtitles rendered into the video.
 
 ## Notes
 
 - Without `ffmpeg`, the app falls back to formats that can be downloaded directly.
 - With `ffmpeg`, separated audio/video streams can be merged into MP4.
+- Burned subtitle MP4 generation also requires `ffmpeg`.
 - The first `faster-whisper` run downloads model files into `./models`, then reuses cache later.
 - Some YouTube videos may still require valid cookies, depending on account, region, age restriction, or anti-bot checks.
 

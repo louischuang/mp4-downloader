@@ -27,6 +27,8 @@
 - 下载与转录时可看到实时进度与状态文字
 - 可播放本地 MP4、打开原始 YouTube 页面、下载生成文件
 - 支持本机 `faster-whisper` 转文字，输出 `txt`、`srt`、`vtt`、`json`
+- 可直接在浏览器中编辑生成的 `srt` 字幕
+- 可从视频列表工具栏生成烧录字幕的新 MP4
 - 安装 `ffmpeg` 时可输出合并后的 MP4
 - 可从右上角按钮栏切换语言
 - 可将下载视频、字幕和模型缓存持久化存储在容器外
@@ -147,6 +149,9 @@ Docker 会将这个文件挂载到：
 - `GET /api/v1/videos`
 - `POST /api/v1/transcriptions`
 - `GET /api/v1/transcriptions/{job_id}`
+- `POST /api/v1/burned-videos`
+- `GET /api/v1/subtitles/{filename}`
+- `PUT /api/v1/subtitles/{filename}`
 
 相关文档：
 
@@ -235,11 +240,14 @@ brew install ffmpeg
 6. 在页面上查看实时下载或转录进度。
 7. 如果启用了转文字，或是使用 MP4 上传模式，完成后会自动接续 STT 作业。
 8. 完成后可在影片列表中播放视频、打开原始链接、下载 MP4，或下载 `txt` / `srt` / `vtt` / `json`。
+9. 如果字幕内容需要修正，可使用 `编辑字幕` 直接修改 `srt` 并保存。
+10. 保存字幕后，可使用 `生成烧录 MP4` 重新导出带字幕的新视频。
 
 ## 补充说明
 
 - 如果没有 `ffmpeg`，程序会退回可直接下载的格式。
 - 如果有 `ffmpeg`，可将分离式音视频流合并为 MP4。
+- 烧录字幕 MP4 也需要 `ffmpeg` 才能使用。
 - 第一次执行 `faster-whisper` 时会先下载模型到 `./models`，之后会直接使用缓存。
 - 某些视频仍可能因为账号、地区、年龄限制或反机器人验证而需要有效 cookies。
 

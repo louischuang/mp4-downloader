@@ -84,6 +84,52 @@ Response includes:
 - `transcription_job_id`
 - `video` metadata snapshot
 
+### `POST /api/v1/burned-videos`
+
+Creates a new MP4 with subtitles burned into the video.
+
+Request:
+
+```json
+{
+  "filename": "example-video.mp4"
+}
+```
+
+Response includes:
+
+- `job_id`
+- `status_url`
+- source `filename`
+
+### `GET /api/v1/subtitles/{filename}`
+
+Returns the editable `srt` content for a given MP4 file.
+
+Response includes:
+
+- video `filename`
+- subtitle `filename`
+- raw `content`
+
+### `PUT /api/v1/subtitles/{filename}`
+
+Updates the `srt` content for a given MP4 file.
+
+Request:
+
+```json
+{
+  "content": "1\n00:00:00,000 --> 00:00:02,000\nHello world\n"
+}
+```
+
+Response includes:
+
+- video `filename`
+- subtitle `filename`
+- `updated_at`
+
 ### `POST /api/v1/transcriptions`
 
 Request:
@@ -154,5 +200,7 @@ What it validates:
 5. After completion, optionally submit `POST /api/v1/transcriptions`
 6. Or upload an MP4 with `POST /api/v1/uploads`
 7. Poll `GET /api/v1/transcriptions/{job_id}`
+8. If transcript text needs correction, read `GET /api/v1/subtitles/{filename}` and update it with `PUT /api/v1/subtitles/{filename}`
+9. Submit `POST /api/v1/burned-videos` to create a subtitle-burned MP4
 
 This structure keeps the HTTP API simple and stable while letting the CLI provide a higher-level automation experience for agents.

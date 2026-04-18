@@ -132,9 +132,11 @@ TRANSLATIONS = {
         "action.play": "播放影片",
         "action.source": "打開影片網址",
         "action.download": "下載",
+        "action.edit_subtitles": "編輯字幕",
         "action.transcribe": "轉文字",
         "action.transcribed": "已轉換",
         "action.retranscribe": "重新轉文字",
+        "action.burn_subtitles": "產生燒錄 MP4",
         "retranscribe.title": "重新轉文字",
         "retranscribe.message": "要重新為「{title}」執行一次文字轉換嗎？",
         "retranscribe.confirm": "重新轉換",
@@ -142,6 +144,8 @@ TRANSLATIONS = {
         "modal.completed_title": "作業完成",
         "modal.completed_download": "已完成下載。",
         "modal.completed_download_transcribe": "已完成下載與轉文字。",
+        "modal.completed_burned_video": "已完成燒錄字幕 MP4。",
+        "modal.completed_subtitle_save": "字幕已儲存。",
         "modal.close": "關閉",
         "quality.best": "最佳可用畫質",
         "quality.1080p": "1080p",
@@ -195,6 +199,24 @@ TRANSLATIONS = {
         "stt.error.start": "無法啟動轉錄工作。",
         "stt.error.status": "無法取得轉錄狀態。",
         "stt.error.service_unavailable": "STT 服務目前無法連線。",
+        "burn.progress_title": "字幕燒錄進度",
+        "burn.preparing": "正在準備字幕燒錄",
+        "burn.rendering": "正在產生燒錄字幕 MP4",
+        "burn.completed": "燒錄字幕 MP4 已完成",
+        "burn.failed": "燒錄字幕 MP4 失敗",
+        "burn.error.start": "無法啟動燒錄字幕 MP4。",
+        "burn.error.source_missing": "找不到原始 MP4 檔案。",
+        "burn.error.subtitle_missing": "找不到可燒錄的 SRT 字幕檔。",
+        "burn.error.ffmpeg_missing": "系統尚未安裝 ffmpeg，無法產生燒錄字幕 MP4。",
+        "burn.error.output_missing": "燒錄完成，但找不到新的 MP4 檔案。",
+        "subtitle.editor_title": "編輯 SRT 字幕",
+        "subtitle.editor_intro": "修改這支影片的 SRT 字幕內容，儲存後再重新產生燒錄 MP4。",
+        "subtitle.editor_save": "儲存字幕",
+        "subtitle.editor_cancel": "取消",
+        "subtitle.editor_placeholder": "請在這裡編輯 SRT 內容",
+        "subtitle.error.fetch": "無法讀取字幕內容。",
+        "subtitle.error.save": "無法儲存字幕內容。",
+        "subtitle.error.missing": "找不到這支影片的 SRT 字幕檔。",
     },
     "zh-Hans": {
         "app.title": "YouTube to MP4 Downloader",
@@ -255,9 +277,11 @@ TRANSLATIONS = {
         "action.play": "播放视频",
         "action.source": "打开视频网址",
         "action.download": "下载",
+        "action.edit_subtitles": "编辑字幕",
         "action.transcribe": "转文字",
         "action.transcribed": "已转换",
         "action.retranscribe": "重新转文字",
+        "action.burn_subtitles": "生成烧录 MP4",
         "retranscribe.title": "重新转文字",
         "retranscribe.message": "要重新为“{title}”执行一次文字转换吗？",
         "retranscribe.confirm": "重新转换",
@@ -265,6 +289,8 @@ TRANSLATIONS = {
         "modal.completed_title": "任务完成",
         "modal.completed_download": "已完成下载。",
         "modal.completed_download_transcribe": "已完成下载与转文字。",
+        "modal.completed_burned_video": "已完成烧录字幕 MP4。",
+        "modal.completed_subtitle_save": "字幕已保存。",
         "modal.close": "关闭",
         "quality.best": "最佳可用画质",
         "quality.1080p": "1080p",
@@ -318,6 +344,24 @@ TRANSLATIONS = {
         "stt.error.start": "无法启动转录任务。",
         "stt.error.status": "无法取得转录状态。",
         "stt.error.service_unavailable": "STT 服务当前无法连接。",
+        "burn.progress_title": "字幕烧录进度",
+        "burn.preparing": "正在准备字幕烧录",
+        "burn.rendering": "正在生成烧录字幕 MP4",
+        "burn.completed": "烧录字幕 MP4 已完成",
+        "burn.failed": "烧录字幕 MP4 失败",
+        "burn.error.start": "无法启动烧录字幕 MP4。",
+        "burn.error.source_missing": "找不到原始 MP4 文件。",
+        "burn.error.subtitle_missing": "找不到可烧录的 SRT 字幕文件。",
+        "burn.error.ffmpeg_missing": "系统尚未安装 ffmpeg，无法生成烧录字幕 MP4。",
+        "burn.error.output_missing": "烧录完成，但找不到新的 MP4 文件。",
+        "subtitle.editor_title": "编辑 SRT 字幕",
+        "subtitle.editor_intro": "修改这支视频的 SRT 字幕内容，保存后再重新生成烧录 MP4。",
+        "subtitle.editor_save": "保存字幕",
+        "subtitle.editor_cancel": "取消",
+        "subtitle.editor_placeholder": "请在这里编辑 SRT 内容",
+        "subtitle.error.fetch": "无法读取字幕内容。",
+        "subtitle.error.save": "无法保存字幕内容。",
+        "subtitle.error.missing": "找不到这支视频的 SRT 字幕文件。",
     },
     "en": {
         "app.title": "YouTube to MP4 Downloader",
@@ -378,9 +422,11 @@ TRANSLATIONS = {
         "action.play": "Play video",
         "action.source": "Open source URL",
         "action.download": "Download",
+        "action.edit_subtitles": "Edit Subtitles",
         "action.transcribe": "Transcribe",
         "action.transcribed": "Converted",
         "action.retranscribe": "Retranscribe",
+        "action.burn_subtitles": "Create Burned MP4",
         "retranscribe.title": "Run Transcription Again",
         "retranscribe.message": "Do you want to transcribe \"{title}\" again?",
         "retranscribe.confirm": "Transcribe Again",
@@ -388,6 +434,8 @@ TRANSLATIONS = {
         "modal.completed_title": "Completed",
         "modal.completed_download": "Download completed.",
         "modal.completed_download_transcribe": "Download and transcription completed.",
+        "modal.completed_burned_video": "Subtitle-burned MP4 completed.",
+        "modal.completed_subtitle_save": "Subtitle file saved.",
         "modal.close": "Close",
         "quality.best": "Best available",
         "quality.1080p": "1080p",
@@ -441,6 +489,24 @@ TRANSLATIONS = {
         "stt.error.start": "Unable to start the transcription job.",
         "stt.error.status": "Unable to fetch the transcription status.",
         "stt.error.service_unavailable": "The STT service is currently unavailable.",
+        "burn.progress_title": "Subtitle Burn Progress",
+        "burn.preparing": "Preparing subtitle burn job",
+        "burn.rendering": "Rendering subtitle-burned MP4",
+        "burn.completed": "Subtitle-burned MP4 completed",
+        "burn.failed": "Subtitle-burned MP4 failed",
+        "burn.error.start": "Unable to start the subtitle-burned MP4 job.",
+        "burn.error.source_missing": "Source MP4 file not found.",
+        "burn.error.subtitle_missing": "SRT subtitle file not found.",
+        "burn.error.ffmpeg_missing": "ffmpeg is required to create a subtitle-burned MP4.",
+        "burn.error.output_missing": "The burned MP4 finished, but the new output file could not be found.",
+        "subtitle.editor_title": "Edit SRT Subtitles",
+        "subtitle.editor_intro": "Update the SRT subtitle content for this video, then create a new burned MP4 when you are ready.",
+        "subtitle.editor_save": "Save Subtitles",
+        "subtitle.editor_cancel": "Cancel",
+        "subtitle.editor_placeholder": "Edit the SRT content here",
+        "subtitle.error.fetch": "Unable to load subtitle content.",
+        "subtitle.error.save": "Unable to save subtitle content.",
+        "subtitle.error.missing": "The SRT subtitle file could not be found for this video.",
     },
     "ja": {
         "app.title": "YouTube to MP4 Downloader",
@@ -501,9 +567,11 @@ TRANSLATIONS = {
         "action.play": "動画を再生",
         "action.source": "動画URLを開く",
         "action.download": "ダウンロード",
+        "action.edit_subtitles": "字幕を編集",
         "action.transcribe": "文字起こし",
         "action.transcribed": "変換済み",
         "action.retranscribe": "再文字起こし",
+        "action.burn_subtitles": "字幕焼き込み MP4 を生成",
         "retranscribe.title": "文字起こしを再実行",
         "retranscribe.message": "「{title}」の文字起こしをもう一度実行しますか？",
         "retranscribe.confirm": "再変換",
@@ -511,6 +579,8 @@ TRANSLATIONS = {
         "modal.completed_title": "完了",
         "modal.completed_download": "ダウンロードが完了しました。",
         "modal.completed_download_transcribe": "ダウンロードと文字起こしが完了しました。",
+        "modal.completed_burned_video": "字幕焼き込み MP4 の生成が完了しました。",
+        "modal.completed_subtitle_save": "字幕を保存しました。",
         "modal.close": "閉じる",
         "quality.best": "最良の画質",
         "quality.1080p": "1080p",
@@ -564,6 +634,24 @@ TRANSLATIONS = {
         "stt.error.start": "文字起こしジョブを開始できません。",
         "stt.error.status": "文字起こし状態を取得できません。",
         "stt.error.service_unavailable": "STT サービスに接続できません。",
+        "burn.progress_title": "字幕焼き込み進捗",
+        "burn.preparing": "字幕焼き込みジョブを準備中",
+        "burn.rendering": "字幕焼き込み MP4 を生成中",
+        "burn.completed": "字幕焼き込み MP4 の生成が完了しました",
+        "burn.failed": "字幕焼き込み MP4 の生成に失敗しました",
+        "burn.error.start": "字幕焼き込み MP4 ジョブを開始できません。",
+        "burn.error.source_missing": "元の MP4 ファイルが見つかりません。",
+        "burn.error.subtitle_missing": "焼き込み可能な SRT 字幕ファイルが見つかりません。",
+        "burn.error.ffmpeg_missing": "字幕焼き込み MP4 を生成するには ffmpeg が必要です。",
+        "burn.error.output_missing": "処理は完了しましたが、新しい MP4 ファイルが見つかりません。",
+        "subtitle.editor_title": "SRT 字幕を編集",
+        "subtitle.editor_intro": "この動画の SRT 字幕を修正し、保存後に字幕焼き込み MP4 を再生成できます。",
+        "subtitle.editor_save": "字幕を保存",
+        "subtitle.editor_cancel": "キャンセル",
+        "subtitle.editor_placeholder": "ここで SRT 内容を編集してください",
+        "subtitle.error.fetch": "字幕内容を読み込めません。",
+        "subtitle.error.save": "字幕内容を保存できません。",
+        "subtitle.error.missing": "この動画の SRT 字幕ファイルが見つかりません。",
     },
 }
 
@@ -839,6 +927,43 @@ def build_upload_filename(raw_title: str, original_filename: str) -> str:
     return candidate.name
 
 
+def build_burned_video_filename(source_path: Path) -> str:
+    safe_stem = secure_filename(f"{source_path.stem}-burned") or f"burned-video-{uuid.uuid4().hex[:8]}"
+    candidate = DOWNLOADS_DIR / f"{safe_stem}.mp4"
+    suffix = 1
+    while candidate.exists():
+        candidate = DOWNLOADS_DIR / f"{safe_stem}-{suffix}.mp4"
+        suffix += 1
+    return candidate.name
+
+
+def copy_transcript_sidecars(source_stem: str, target_stem: str) -> None:
+    for extension in ("txt", "srt", "vtt", "json"):
+        source_path = TRANSCRIPTS_DIR / f"{source_stem}.{extension}"
+        if not source_path.is_file():
+            continue
+        target_path = TRANSCRIPTS_DIR / f"{target_stem}.{extension}"
+        shutil.copy2(source_path, target_path)
+
+
+def get_srt_path_for_video(filename: str) -> Path:
+    return TRANSCRIPTS_DIR / f"{Path(filename).stem}.srt"
+
+
+def escape_ffmpeg_subtitle_path(path: Path) -> str:
+    value = str(path)
+    return value.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+
+
+def build_subtitle_filter(subtitle_path: Path) -> str:
+    escaped_path = escape_ffmpeg_subtitle_path(subtitle_path)
+    # Prefer a CJK-capable font inside the container so Traditional Chinese glyphs render.
+    return (
+        f"subtitles='{escaped_path}'"
+        ":force_style='FontName=Noto Sans CJK TC,FontSize=18,Outline=1.2,Shadow=0.6'"
+    )
+
+
 def parse_progress_line(line: str) -> tuple[float | None, str | None, str]:
     progress_match = re.search(r"\[download\]\s+(\d+(?:\.\d+)?)%", line)
     if progress_match:
@@ -938,6 +1063,136 @@ def run_download_job(job_id: str, url: str, quality: str) -> None:
         update_job(job_id, status="error", progress=0.0, status_key="progress.failed", status_text="", error=str(exc), error_key="error.download_failed")
 
 
+def run_burned_video_job(job_id: str, filename: str) -> None:
+    source_path = DOWNLOADS_DIR / filename
+    subtitle_path = TRANSCRIPTS_DIR / f"{source_path.stem}.srt"
+
+    if not source_path.is_file():
+        update_job(
+            job_id,
+            status="error",
+            progress=0.0,
+            status_key="burn.failed",
+            status_text="",
+            error="Source MP4 file not found.",
+            error_key="burn.error.source_missing",
+        )
+        return
+
+    if not subtitle_path.is_file():
+        update_job(
+            job_id,
+            status="error",
+            progress=0.0,
+            status_key="burn.failed",
+            status_text="",
+            error="SRT subtitle file not found.",
+            error_key="burn.error.subtitle_missing",
+        )
+        return
+
+    if not ffmpeg_exists():
+        update_job(
+            job_id,
+            status="error",
+            progress=0.0,
+            status_key="burn.failed",
+            status_text="",
+            error="ffmpeg is required to create a subtitle-burned MP4.",
+            error_key="burn.error.ffmpeg_missing",
+        )
+        return
+
+    target_filename = build_burned_video_filename(source_path)
+    target_path = DOWNLOADS_DIR / target_filename
+    command = [
+        "ffmpeg",
+        "-y",
+        "-i",
+        str(source_path),
+        "-vf",
+        build_subtitle_filter(subtitle_path),
+        "-c:a",
+        "copy",
+        str(target_path),
+    ]
+
+    try:
+        update_job(job_id, status="running", progress=5.0, status_key="burn.preparing", status_text="")
+        completed = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            cwd=BASE_DIR,
+            check=False,
+        )
+        if completed.returncode != 0:
+            lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+            update_job(
+                job_id,
+                status="error",
+                progress=0.0,
+                status_key="burn.failed",
+                status_text="",
+                error=lines[-1] if lines else "Unable to create subtitle-burned MP4.",
+                error_key=None,
+            )
+            if target_path.exists():
+                target_path.unlink(missing_ok=True)
+            return
+
+        if not target_path.is_file():
+            update_job(
+                job_id,
+                status="error",
+                progress=0.0,
+                status_key="burn.failed",
+                status_text="",
+                error="The burned MP4 finished, but the new output file could not be found.",
+                error_key="burn.error.output_missing",
+            )
+            return
+
+        copy_transcript_sidecars(source_path.stem, target_path.stem)
+        source_entry = load_video_index().get(source_path.name, {})
+        burned_title = f"{source_entry.get('title') or source_path.stem} (Burned Subtitles)"
+        upsert_video_index_entry(
+            target_filename,
+            {
+                "title": burned_title,
+                "uploader": source_entry.get("uploader"),
+                "webpage_url": source_entry.get("webpage_url"),
+                "video_id": source_entry.get("video_id"),
+                "source_type": "burned_subtitles",
+                "source_filename": source_path.name,
+            },
+        )
+        update_job(
+            job_id,
+            status="completed",
+            progress=100.0,
+            status_key="burn.completed",
+            status_text="",
+            title=burned_title,
+            filename=target_filename,
+            error=None,
+            error_key=None,
+        )
+    except Exception as exc:
+        if target_path.exists():
+            target_path.unlink(missing_ok=True)
+        update_job(
+            job_id,
+            status="error",
+            progress=0.0,
+            status_key="burn.failed",
+            status_text="",
+            error=str(exc),
+            error_key=None,
+        )
+
+
 def prepare_runtime_cookies_file() -> str:
     source = Path(YTDLP_COOKIES_FILE)
     runtime_dir = Path(tempfile.gettempdir()) / "youtube-to-mp4-cookies"
@@ -983,6 +1238,7 @@ def build_api_spec() -> dict[str, Any]:
             {"name": "Downloads", "description": "Create and inspect asynchronous download jobs."},
             {"name": "Videos", "description": "List downloaded MP4 files and related transcript artifacts."},
             {"name": "Transcriptions", "description": "Create and inspect speech-to-text jobs."},
+            {"name": "Burned Videos", "description": "Generate a new MP4 with subtitles burned into the video frames."},
         ],
         "paths": {
             "/api/health": {
@@ -1177,6 +1433,99 @@ def build_api_spec() -> dict[str, Any]:
                     },
                 }
             },
+            "/api/v1/burned-videos": {
+                "post": {
+                    "tags": ["Burned Videos"],
+                    "summary": "Create a subtitle-burned MP4 from an existing video",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/CreateBurnedVideoRequest"},
+                                "examples": {
+                                    "default": {
+                                        "value": {
+                                            "filename": "example-video.mp4",
+                                        }
+                                    }
+                                },
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Burn job accepted.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/CreateDownloadResponse"}
+                                }
+                            },
+                        },
+                        "400": {
+                            "description": "Invalid request payload.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
+                    },
+                }
+            },
+            "/api/v1/subtitles/{filename}": {
+                "get": {
+                    "tags": ["Videos"],
+                    "summary": "Get editable SRT subtitle content for a video",
+                    "parameters": [
+                        {
+                            "in": "path",
+                            "name": "filename",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Current SRT subtitle content.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/SubtitleContentResponse"}
+                                }
+                            },
+                        }
+                    },
+                },
+                "put": {
+                    "tags": ["Videos"],
+                    "summary": "Save edited SRT subtitle content for a video",
+                    "parameters": [
+                        {
+                            "in": "path",
+                            "name": "filename",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/UpdateSubtitleContentRequest"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Updated subtitle content snapshot.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/SubtitleContentResponse"}
+                                }
+                            },
+                        }
+                    },
+                }
+            },
         },
         "components": {
             "schemas": {
@@ -1229,10 +1578,11 @@ def build_api_spec() -> dict[str, Any]:
                                 "download": {"type": "boolean"},
                                 "video_listing": {"type": "boolean"},
                                 "transcription": {"type": "boolean"},
+                                "burned_video": {"type": "boolean"},
                                 "swagger_docs": {"type": "boolean"},
                                 "cli": {"type": "boolean"},
                             },
-                            "required": ["download", "video_listing", "transcription", "swagger_docs", "cli"],
+                            "required": ["download", "video_listing", "transcription", "burned_video", "swagger_docs", "cli"],
                         },
                     },
                     "required": [
@@ -1340,6 +1690,29 @@ def build_api_spec() -> dict[str, Any]:
                     },
                     "required": ["filename"],
                 },
+                "CreateBurnedVideoRequest": {
+                    "type": "object",
+                    "properties": {
+                        "filename": {"type": "string"},
+                    },
+                    "required": ["filename"],
+                },
+                "UpdateSubtitleContentRequest": {
+                    "type": "object",
+                    "properties": {
+                        "content": {"type": "string"},
+                    },
+                    "required": ["content"],
+                },
+                "SubtitleContentResponse": {
+                    "type": "object",
+                    "properties": {
+                        "filename": {"type": "string"},
+                        "subtitle_filename": {"type": "string"},
+                        "content": {"type": "string"},
+                    },
+                    "required": ["filename", "subtitle_filename", "content"],
+                },
                 "TranscriptionJob": {
                     "type": "object",
                     "properties": {
@@ -1382,6 +1755,7 @@ def build_capabilities_payload() -> dict[str, Any]:
             "download": True,
             "video_listing": True,
             "transcription": True,
+            "burned_video": True,
             "swagger_docs": True,
             "cli": True,
         },
@@ -1524,6 +1898,75 @@ def create_transcription():
 
     status_code, data = stt_request("/jobs", method="POST", payload={"filename": filename, "model": model})
     return jsonify(data), status_code
+
+
+@app.post("/api/v1/burned-videos")
+@app.post("/api/burned-videos")
+def create_burned_video():
+    payload = request.get_json(silent=True) or {}
+    filename = str(payload.get("filename", "")).strip()
+
+    if not filename:
+        return jsonify({"error": "filename is required", "error_key": "burn.error.start"}), 400
+
+    if not (DOWNLOADS_DIR / filename).is_file():
+        return jsonify({"error": "Source MP4 file not found.", "error_key": "burn.error.source_missing"}), 404
+
+    if not (TRANSCRIPTS_DIR / f"{Path(filename).stem}.srt").is_file():
+        return jsonify({"error": "SRT subtitle file not found.", "error_key": "burn.error.subtitle_missing"}), 404
+
+    if not ffmpeg_exists():
+        return jsonify({"error": "ffmpeg is required to create a subtitle-burned MP4.", "error_key": "burn.error.ffmpeg_missing"}), 500
+
+    job_id, _ = create_job()
+    worker = threading.Thread(target=run_burned_video_job, args=(job_id, filename), daemon=True)
+    worker.start()
+    return jsonify({"job_id": job_id, "status_url": f"/api/v1/jobs/{job_id}"})
+
+
+@app.get("/api/v1/subtitles/<path:filename>")
+@app.get("/api/subtitles/<path:filename>")
+def get_subtitle_content(filename: str):
+    source_path = DOWNLOADS_DIR / filename
+    subtitle_path = get_srt_path_for_video(filename)
+
+    if not source_path.is_file() or not subtitle_path.is_file():
+        return jsonify({"error": "The SRT subtitle file could not be found for this video.", "error_key": "subtitle.error.missing"}), 404
+
+    try:
+        return jsonify(
+            {
+                "filename": filename,
+                "subtitle_filename": subtitle_path.name,
+                "content": subtitle_path.read_text(encoding="utf-8"),
+            }
+        )
+    except OSError:
+        return jsonify({"error": "Unable to load subtitle content.", "error_key": "subtitle.error.fetch"}), 500
+
+
+@app.put("/api/v1/subtitles/<path:filename>")
+@app.put("/api/subtitles/<path:filename>")
+def update_subtitle_content(filename: str):
+    payload = request.get_json(silent=True) or {}
+    content = str(payload.get("content", ""))
+    source_path = DOWNLOADS_DIR / filename
+    subtitle_path = get_srt_path_for_video(filename)
+
+    if not source_path.is_file() or not subtitle_path.is_file():
+        return jsonify({"error": "The SRT subtitle file could not be found for this video.", "error_key": "subtitle.error.missing"}), 404
+
+    try:
+        subtitle_path.write_text(content, encoding="utf-8")
+        return jsonify(
+            {
+                "filename": filename,
+                "subtitle_filename": subtitle_path.name,
+                "content": content,
+            }
+        )
+    except OSError:
+        return jsonify({"error": "Unable to save subtitle content.", "error_key": "subtitle.error.save"}), 500
 
 
 @app.get("/api/v1/transcriptions/<job_id>")
