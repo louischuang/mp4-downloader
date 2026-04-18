@@ -6,3 +6,4 @@ video-storage/
 downloads/
 models/
 transcripts/
+.env.local
