@@ -59,6 +59,7 @@ TOOL_USAGE_DOC_PATH = BASE_DIR / "docs" / "TOOL_USAGE.md"
 CLI_GUIDE_DOC_PATH = BASE_DIR / "docs" / "CLI_GUIDE.md"
 BURN_BASE_FONT_SIZE = 50.0
 BURN_FONT_SIZE_OPTIONS = {
+    "minus_30": 0.7,
     "minus_20": 0.8,
     "minus_10": 0.9,
     "zero": 1.0,
@@ -72,7 +73,7 @@ BURN_FONT_FAMILIES = {
     "mono": "Noto Sans Mono CJK TC",
 }
 BURN_DEFAULT_SETTINGS = {
-    "size": "zero",
+    "size": "plus_20",
     "font_family": "sans",
     "text_color": "#ffffff",
     "outline_color": "#000000",
@@ -285,6 +286,7 @@ TRANSLATIONS = {
         "burn.settings_title": "燒錄字幕 MP4 設定",
         "burn.settings_intro": "為「{title}」選擇字幕大小、配色與效果，再開始產生新的字幕 MP4。",
         "burn.settings_size": "字幕大小",
+        "burn.settings_size_minus_30": "-30%",
         "burn.settings_size_minus_20": "-20%",
         "burn.settings_size_minus_10": "-10%",
         "burn.settings_size_zero": "0%",
@@ -483,6 +485,7 @@ TRANSLATIONS = {
         "burn.settings_title": "烧录字幕 MP4 设置",
         "burn.settings_intro": "为“{title}”选择字幕大小、配色与效果，然后开始生成新的字幕 MP4。",
         "burn.settings_size": "字幕大小",
+        "burn.settings_size_minus_30": "-30%",
         "burn.settings_size_minus_20": "-20%",
         "burn.settings_size_minus_10": "-10%",
         "burn.settings_size_zero": "0%",
@@ -681,6 +684,7 @@ TRANSLATIONS = {
         "burn.settings_title": "Burned MP4 Settings",
         "burn.settings_intro": "Choose subtitle size, color, and effects for \"{title}\" before rendering a new burned MP4.",
         "burn.settings_size": "Subtitle Size",
+        "burn.settings_size_minus_30": "-30%",
         "burn.settings_size_minus_20": "-20%",
         "burn.settings_size_minus_10": "-10%",
         "burn.settings_size_zero": "0%",
@@ -879,6 +883,7 @@ TRANSLATIONS = {
         "burn.settings_title": "字幕焼き込み MP4 設定",
         "burn.settings_intro": "「{title}」の字幕サイズ、配色、効果を選んでから新しい字幕焼き込み MP4 を生成します。",
         "burn.settings_size": "字幕サイズ",
+        "burn.settings_size_minus_30": "-30%",
         "burn.settings_size_minus_20": "-20%",
         "burn.settings_size_minus_10": "-10%",
         "burn.settings_size_zero": "0%",
