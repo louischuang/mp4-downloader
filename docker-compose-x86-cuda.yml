@@ -13,6 +13,7 @@ services:
       YTDLP_REMOTE_COMPONENTS: ejs:github
       STT_API_URL: http://stt-service:8000
       STT_DEFAULT_MODEL: small
+      STT_SHARED_STORAGE: "true"
       APP_HOST: 0.0.0.0
       APP_PORT: 5000
       APP_DEBUG: "false"

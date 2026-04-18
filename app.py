@@ -40,6 +40,7 @@ YTDLP_COOKIES_FILE = os.getenv("YTDLP_COOKIES_FILE", "").strip()
 YTDLP_REMOTE_COMPONENTS = os.getenv("YTDLP_REMOTE_COMPONENTS", "ejs:github").strip()
 STT_API_URL = os.getenv("STT_API_URL", "http://stt-service:8000").rstrip("/")
 STT_DEFAULT_MODEL = os.getenv("STT_DEFAULT_MODEL", "small").strip() or "small"
+STT_SHARED_STORAGE = os.getenv("STT_SHARED_STORAGE", "false").lower() == "true"
 
 
 def load_app_version() -> str:
@@ -1213,6 +1214,12 @@ def stt_upload_job(source_path: Path, model: str) -> tuple[int, dict[str, Any]]:
     except ValueError:
         body = {"error": response.text or f"Unexpected STT response ({response.status_code})"}
     return response.status_code, body
+
+
+def start_stt_job(source_path: Path, model: str) -> tuple[int, dict[str, Any]]:
+    if STT_SHARED_STORAGE:
+        return stt_request("/jobs", method="POST", payload={"filename": source_path.name, "model": model})
+    return stt_upload_job(source_path, model)
 
 
 def sync_remote_transcription_artifacts(job_id: str, filename: str, output_files: dict[str, str]) -> tuple[bool, str | None]:
@@ -2900,7 +2907,7 @@ def upload_video():
                 "source_type": "upload",
             },
         )
-        status_code, data = stt_upload_job(target_path, model)
+        status_code, data = start_stt_job(target_path, model)
         if status_code >= 400:
             return jsonify(data), status_code
 
@@ -2931,7 +2938,7 @@ def create_transcription():
     if not (DOWNLOADS_DIR / filename).is_file():
         return jsonify({"error": "Source MP4 file not found.", "error_key": "stt.error.start"}), 404
 
-    status_code, data = stt_upload_job(DOWNLOADS_DIR / filename, model)
+    status_code, data = start_stt_job(DOWNLOADS_DIR / filename, model)
     return jsonify(data), status_code
 
 
@@ -3013,7 +3020,7 @@ def transcription_status(job_id: str):
     status_code, data = stt_request(f"/jobs/{job_id}")
     output_files = data.get("output_files", {})
     filename = str(data.get("filename", "")).strip()
-    if status_code < 400 and data.get("status") == "completed" and output_files and filename:
+    if not STT_SHARED_STORAGE and status_code < 400 and data.get("status") == "completed" and output_files and filename:
         synced, sync_error = sync_remote_transcription_artifacts(job_id, filename, output_files)
         if not synced and sync_error:
             data["sync_error"] = sync_error
