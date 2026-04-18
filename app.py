@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import textwrap
 import threading
 import uuid
 import json
@@ -33,6 +34,44 @@ YTDLP_REMOTE_COMPONENTS = os.getenv("YTDLP_REMOTE_COMPONENTS", "ejs:github").str
 STT_API_URL = os.getenv("STT_API_URL", "http://stt-service:8000").rstrip("/")
 STT_DEFAULT_MODEL = os.getenv("STT_DEFAULT_MODEL", "small").strip() or "small"
 API_VERSION = "1.0.0"
+BURN_BASE_FONT_SIZE = 25.0
+BURN_FONT_SIZE_OPTIONS = {
+    "minus_20": 0.8,
+    "minus_10": 0.9,
+    "zero": 1.0,
+    "plus_10": 1.1,
+    "plus_20": 1.2,
+    "plus_30": 1.3,
+}
+BURN_FONT_FAMILIES = {
+    "sans": "Noto Sans CJK TC",
+    "serif": "Noto Serif CJK TC",
+    "mono": "Noto Sans Mono CJK TC",
+}
+BURN_DEFAULT_SETTINGS = {
+    "size": "zero",
+    "font_family": "sans",
+    "text_color": "#ffffff",
+    "outline_color": "#000000",
+    "outline_width": 0.8,
+    "position": "bottom",
+    "line_spacing": 0,
+    "margin_v": 34,
+    "margin_l": 42,
+    "margin_r": 42,
+    "shadow": False,
+    "background": False,
+    "background_color": "#000000",
+    "background_opacity": 56,
+    "background_size": 32,
+    "background_radius": 22,
+    "max_chars_per_line": 18,
+}
+BURN_POSITION_OPTIONS = {
+    "bottom": 2,
+    "middle": 5,
+    "top": 8,
+}
 
 YOUTUBE_HOSTS = {
     "youtube.com",
@@ -209,6 +248,50 @@ TRANSLATIONS = {
         "burn.error.subtitle_missing": "找不到可燒錄的 SRT 字幕檔。",
         "burn.error.ffmpeg_missing": "系統尚未安裝 ffmpeg，無法產生燒錄字幕 MP4。",
         "burn.error.output_missing": "燒錄完成，但找不到新的 MP4 檔案。",
+        "burn.settings_title": "燒錄字幕 MP4 設定",
+        "burn.settings_intro": "為「{title}」選擇字幕大小、配色與效果，再開始產生新的字幕 MP4。",
+        "burn.settings_size": "字幕大小",
+        "burn.settings_size_minus_20": "-20%",
+        "burn.settings_size_minus_10": "-10%",
+        "burn.settings_size_zero": "0%",
+        "burn.settings_size_plus_10": "加大 10%",
+        "burn.settings_size_plus_20": "加大 20%",
+        "burn.settings_size_plus_30": "加大 30%",
+        "burn.settings_font_family": "字型家族",
+        "burn.settings_font_family_sans": "黑體",
+        "burn.settings_font_family_serif": "明體",
+        "burn.settings_font_family_mono": "等寬字體",
+        "burn.settings_text_color": "字體顏色",
+        "burn.settings_outline_color": "外框顏色",
+        "burn.settings_outline_width": "外框寬度",
+        "burn.settings_position": "字幕位置",
+        "burn.settings_position_bottom": "底部",
+        "burn.settings_position_middle": "中間",
+        "burn.settings_position_top": "頂部",
+        "burn.settings_line_spacing": "行距",
+        "burn.settings_margin_v": "上下邊距",
+        "burn.settings_margin_l": "左側安全邊距",
+        "burn.settings_margin_r": "右側安全邊距",
+        "burn.settings_background_color": "背景顏色",
+        "burn.settings_background_opacity": "背景透明度",
+        "burn.settings_background_size": "背景大小",
+        "burn.settings_background_radius": "圓角大小",
+        "burn.settings_max_chars": "每行最大字數",
+        "burn.settings_profile": "樣式 Profile",
+        "burn.settings_profile_custom": "目前樣式",
+        "burn.settings_profile_name": "Profile 名稱",
+        "burn.settings_profile_name_placeholder": "例如：會議字幕",
+        "burn.settings_profile_save": "儲存 Profile",
+        "burn.settings_profile_delete": "刪除 Profile",
+        "burn.settings_preview": "即時預覽",
+        "burn.settings_preview_line_1": "這是一段字幕預覽",
+        "burn.settings_preview_line_2": "你可以在這裡先確認樣式",
+        "burn.settings_effects": "字幕效果",
+        "burn.settings_shadow": "加上陰影",
+        "burn.settings_background": "增加透明背景",
+        "burn.settings_submit": "開始燒錄",
+        "burn.settings_cancel": "取消",
+        "burn.settings_hint": "建議之後可再加入字幕位置、上下邊距、字型家族與每行字數限制。",
         "subtitle.editor_title": "編輯 SRT 字幕",
         "subtitle.editor_intro": "修改這支影片的 SRT 字幕內容，儲存後再重新產生燒錄 MP4。",
         "subtitle.editor_save": "儲存字幕",
@@ -354,6 +437,50 @@ TRANSLATIONS = {
         "burn.error.subtitle_missing": "找不到可烧录的 SRT 字幕文件。",
         "burn.error.ffmpeg_missing": "系统尚未安装 ffmpeg，无法生成烧录字幕 MP4。",
         "burn.error.output_missing": "烧录完成，但找不到新的 MP4 文件。",
+        "burn.settings_title": "烧录字幕 MP4 设置",
+        "burn.settings_intro": "为“{title}”选择字幕大小、配色与效果，然后开始生成新的字幕 MP4。",
+        "burn.settings_size": "字幕大小",
+        "burn.settings_size_minus_20": "-20%",
+        "burn.settings_size_minus_10": "-10%",
+        "burn.settings_size_zero": "0%",
+        "burn.settings_size_plus_10": "加大 10%",
+        "burn.settings_size_plus_20": "加大 20%",
+        "burn.settings_size_plus_30": "加大 30%",
+        "burn.settings_font_family": "字体家族",
+        "burn.settings_font_family_sans": "黑体",
+        "burn.settings_font_family_serif": "明体",
+        "burn.settings_font_family_mono": "等宽字体",
+        "burn.settings_text_color": "字体颜色",
+        "burn.settings_outline_color": "描边颜色",
+        "burn.settings_outline_width": "描边宽度",
+        "burn.settings_position": "字幕位置",
+        "burn.settings_position_bottom": "底部",
+        "burn.settings_position_middle": "中间",
+        "burn.settings_position_top": "顶部",
+        "burn.settings_line_spacing": "行距",
+        "burn.settings_margin_v": "上下边距",
+        "burn.settings_margin_l": "左侧安全边距",
+        "burn.settings_margin_r": "右侧安全边距",
+        "burn.settings_background_color": "背景颜色",
+        "burn.settings_background_opacity": "背景透明度",
+        "burn.settings_background_size": "背景大小",
+        "burn.settings_background_radius": "圆角大小",
+        "burn.settings_max_chars": "每行最大字数",
+        "burn.settings_profile": "样式 Profile",
+        "burn.settings_profile_custom": "当前样式",
+        "burn.settings_profile_name": "Profile 名称",
+        "burn.settings_profile_name_placeholder": "例如：会议字幕",
+        "burn.settings_profile_save": "保存 Profile",
+        "burn.settings_profile_delete": "删除 Profile",
+        "burn.settings_preview": "即时预览",
+        "burn.settings_preview_line_1": "这是一段字幕预览",
+        "burn.settings_preview_line_2": "你可以先在这里确认样式",
+        "burn.settings_effects": "字幕效果",
+        "burn.settings_shadow": "加上阴影",
+        "burn.settings_background": "增加透明背景",
+        "burn.settings_submit": "开始烧录",
+        "burn.settings_cancel": "取消",
+        "burn.settings_hint": "建议之后再加入字幕位置、上下边距、字体家族与每行字数限制。",
         "subtitle.editor_title": "编辑 SRT 字幕",
         "subtitle.editor_intro": "修改这支视频的 SRT 字幕内容，保存后再重新生成烧录 MP4。",
         "subtitle.editor_save": "保存字幕",
@@ -499,6 +626,50 @@ TRANSLATIONS = {
         "burn.error.subtitle_missing": "SRT subtitle file not found.",
         "burn.error.ffmpeg_missing": "ffmpeg is required to create a subtitle-burned MP4.",
         "burn.error.output_missing": "The burned MP4 finished, but the new output file could not be found.",
+        "burn.settings_title": "Burned MP4 Settings",
+        "burn.settings_intro": "Choose subtitle size, color, and effects for \"{title}\" before rendering a new burned MP4.",
+        "burn.settings_size": "Subtitle Size",
+        "burn.settings_size_minus_20": "-20%",
+        "burn.settings_size_minus_10": "-10%",
+        "burn.settings_size_zero": "0%",
+        "burn.settings_size_plus_10": "Larger 10%",
+        "burn.settings_size_plus_20": "Larger 20%",
+        "burn.settings_size_plus_30": "Larger 30%",
+        "burn.settings_font_family": "Font Family",
+        "burn.settings_font_family_sans": "Sans",
+        "burn.settings_font_family_serif": "Serif",
+        "burn.settings_font_family_mono": "Monospace",
+        "burn.settings_text_color": "Text Color",
+        "burn.settings_outline_color": "Outline Color",
+        "burn.settings_outline_width": "Outline Width",
+        "burn.settings_position": "Subtitle Position",
+        "burn.settings_position_bottom": "Bottom",
+        "burn.settings_position_middle": "Middle",
+        "burn.settings_position_top": "Top",
+        "burn.settings_line_spacing": "Line Spacing",
+        "burn.settings_margin_v": "Vertical Margin",
+        "burn.settings_margin_l": "Left Safe Margin",
+        "burn.settings_margin_r": "Right Safe Margin",
+        "burn.settings_background_color": "Background Color",
+        "burn.settings_background_opacity": "Background Opacity",
+        "burn.settings_background_size": "Background Size",
+        "burn.settings_background_radius": "Corner Radius",
+        "burn.settings_max_chars": "Max Chars Per Line",
+        "burn.settings_profile": "Style Profile",
+        "burn.settings_profile_custom": "Current Style",
+        "burn.settings_profile_name": "Profile Name",
+        "burn.settings_profile_name_placeholder": "e.g. Meeting captions",
+        "burn.settings_profile_save": "Save Profile",
+        "burn.settings_profile_delete": "Delete Profile",
+        "burn.settings_preview": "Live Preview",
+        "burn.settings_preview_line_1": "This is a subtitle preview",
+        "burn.settings_preview_line_2": "Use it to confirm the style first",
+        "burn.settings_effects": "Effects",
+        "burn.settings_shadow": "Add shadow",
+        "burn.settings_background": "Add translucent background",
+        "burn.settings_submit": "Start Burn",
+        "burn.settings_cancel": "Cancel",
+        "burn.settings_hint": "Good future options to add are subtitle position, vertical margin, font family, and max characters per line.",
         "subtitle.editor_title": "Edit SRT Subtitles",
         "subtitle.editor_intro": "Update the SRT subtitle content for this video, then create a new burned MP4 when you are ready.",
         "subtitle.editor_save": "Save Subtitles",
@@ -644,6 +815,50 @@ TRANSLATIONS = {
         "burn.error.subtitle_missing": "焼き込み可能な SRT 字幕ファイルが見つかりません。",
         "burn.error.ffmpeg_missing": "字幕焼き込み MP4 を生成するには ffmpeg が必要です。",
         "burn.error.output_missing": "処理は完了しましたが、新しい MP4 ファイルが見つかりません。",
+        "burn.settings_title": "字幕焼き込み MP4 設定",
+        "burn.settings_intro": "「{title}」の字幕サイズ、配色、効果を選んでから新しい字幕焼き込み MP4 を生成します。",
+        "burn.settings_size": "字幕サイズ",
+        "burn.settings_size_minus_20": "-20%",
+        "burn.settings_size_minus_10": "-10%",
+        "burn.settings_size_zero": "0%",
+        "burn.settings_size_plus_10": "10% 大きく",
+        "burn.settings_size_plus_20": "20% 大きく",
+        "burn.settings_size_plus_30": "30% 大きく",
+        "burn.settings_font_family": "フォント",
+        "burn.settings_font_family_sans": "ゴシック",
+        "burn.settings_font_family_serif": "明朝",
+        "burn.settings_font_family_mono": "等幅",
+        "burn.settings_text_color": "文字色",
+        "burn.settings_outline_color": "縁取り色",
+        "burn.settings_outline_width": "縁取り幅",
+        "burn.settings_position": "字幕位置",
+        "burn.settings_position_bottom": "下",
+        "burn.settings_position_middle": "中央",
+        "burn.settings_position_top": "上",
+        "burn.settings_line_spacing": "行間",
+        "burn.settings_margin_v": "上下マージン",
+        "burn.settings_margin_l": "左の安全マージン",
+        "burn.settings_margin_r": "右の安全マージン",
+        "burn.settings_background_color": "背景色",
+        "burn.settings_background_opacity": "背景の透明度",
+        "burn.settings_background_size": "背景サイズ",
+        "burn.settings_background_radius": "角丸サイズ",
+        "burn.settings_max_chars": "1 行の最大文字数",
+        "burn.settings_profile": "スタイル Profile",
+        "burn.settings_profile_custom": "現在のスタイル",
+        "burn.settings_profile_name": "Profile 名",
+        "burn.settings_profile_name_placeholder": "例：会議字幕",
+        "burn.settings_profile_save": "Profile を保存",
+        "burn.settings_profile_delete": "Profile を削除",
+        "burn.settings_preview": "ライブプレビュー",
+        "burn.settings_preview_line_1": "これは字幕プレビューです",
+        "burn.settings_preview_line_2": "ここで先に見た目を確認できます",
+        "burn.settings_effects": "字幕効果",
+        "burn.settings_shadow": "影を付ける",
+        "burn.settings_background": "半透明背景を付ける",
+        "burn.settings_submit": "焼き込み開始",
+        "burn.settings_cancel": "キャンセル",
+        "burn.settings_hint": "今後追加すると便利なのは、字幕位置、上下マージン、フォントファミリー、1 行あたりの最大文字数です。",
         "subtitle.editor_title": "SRT 字幕を編集",
         "subtitle.editor_intro": "この動画の SRT 字幕を修正し、保存後に字幕焼き込み MP4 を再生成できます。",
         "subtitle.editor_save": "字幕を保存",
@@ -853,9 +1068,11 @@ def list_video_files() -> list[dict[str, Any]]:
                 "youtube_url": entry.get("webpage_url"),
                 "size_bytes": path.stat().st_size,
                 "media_url": f"/media/{path.name}",
+                "media_version": path.stat().st_mtime_ns,
                 "download_url": f"/files/{path.name}",
                 "transcript_downloads": transcript_downloads,
-                "captions_url": f"/transcripts/{vtt_path.name}" if vtt_path.is_file() else None,
+                "captions_url": f"/captions/{vtt_path.name}" if vtt_path.is_file() else None,
+                "captions_version": vtt_path.stat().st_mtime_ns if vtt_path.is_file() else None,
                 "is_transcribed": vtt_path.is_file() or txt_path.is_file(),
             }
         )
@@ -950,18 +1167,192 @@ def get_srt_path_for_video(filename: str) -> Path:
     return TRANSCRIPTS_DIR / f"{Path(filename).stem}.srt"
 
 
+def get_vtt_path_for_video(filename: str) -> Path:
+    return TRANSCRIPTS_DIR / f"{Path(filename).stem}.vtt"
+
+
+def normalize_hex_color(value: Any, fallback: str) -> str:
+    raw = str(value or "").strip()
+    if re.fullmatch(r"#[0-9a-fA-F]{6}", raw):
+        return raw.lower()
+    return fallback
+
+
+def hex_to_ass_color(value: str, alpha: int = 0) -> str:
+    red = int(value[1:3], 16)
+    green = int(value[3:5], 16)
+    blue = int(value[5:7], 16)
+    return f"&H{alpha:02X}{blue:02X}{green:02X}{red:02X}"
+
+
+def wrap_subtitle_text(text: str, max_chars_per_line: int) -> str:
+    if max_chars_per_line <= 0:
+        return text
+    paragraphs = [segment.strip() for segment in text.splitlines()]
+    wrapped_lines: list[str] = []
+    for paragraph in paragraphs:
+        if not paragraph:
+            continue
+        wrapped_lines.extend(
+            textwrap.wrap(
+                paragraph,
+                width=max_chars_per_line,
+                break_long_words=True,
+                break_on_hyphens=False,
+                replace_whitespace=False,
+                drop_whitespace=False,
+            )
+            or [paragraph]
+        )
+    return "\n".join(wrapped_lines)
+
+
+def build_wrapped_srt_content(content: str, max_chars_per_line: int) -> str:
+    if max_chars_per_line <= 0:
+        return content
+    normalized = content.replace("\r\n", "\n").replace("\r", "\n")
+    blocks = re.split(r"\n\s*\n", normalized.strip())
+    rebuilt_blocks: list[str] = []
+    for block in blocks:
+        lines = block.split("\n")
+        if len(lines) < 3:
+            rebuilt_blocks.append(block)
+            continue
+        index_line = lines[0]
+        time_line = lines[1]
+        text = "\n".join(lines[2:])
+        rebuilt_blocks.append("\n".join([index_line, time_line, wrap_subtitle_text(text, max_chars_per_line)]))
+    return "\n\n".join(rebuilt_blocks).strip() + "\n"
+
+
+def parse_burn_settings(raw: Any) -> dict[str, Any]:
+    payload = raw if isinstance(raw, dict) else {}
+    size = str(payload.get("size", BURN_DEFAULT_SETTINGS["size"])).strip()
+    font_family = str(payload.get("font_family", BURN_DEFAULT_SETTINGS["font_family"])).strip()
+    text_color = normalize_hex_color(payload.get("text_color"), BURN_DEFAULT_SETTINGS["text_color"])
+    outline_color = normalize_hex_color(payload.get("outline_color"), BURN_DEFAULT_SETTINGS["outline_color"])
+    try:
+        outline_width = float(payload.get("outline_width", BURN_DEFAULT_SETTINGS["outline_width"]))
+    except (TypeError, ValueError):
+        outline_width = BURN_DEFAULT_SETTINGS["outline_width"]
+    position = str(payload.get("position", BURN_DEFAULT_SETTINGS["position"])).strip()
+    try:
+        line_spacing = int(payload.get("line_spacing", BURN_DEFAULT_SETTINGS["line_spacing"]))
+    except (TypeError, ValueError):
+        line_spacing = BURN_DEFAULT_SETTINGS["line_spacing"]
+    try:
+        margin_v = int(payload.get("margin_v", BURN_DEFAULT_SETTINGS["margin_v"]))
+    except (TypeError, ValueError):
+        margin_v = BURN_DEFAULT_SETTINGS["margin_v"]
+    try:
+        margin_l = int(payload.get("margin_l", BURN_DEFAULT_SETTINGS["margin_l"]))
+    except (TypeError, ValueError):
+        margin_l = BURN_DEFAULT_SETTINGS["margin_l"]
+    try:
+        margin_r = int(payload.get("margin_r", BURN_DEFAULT_SETTINGS["margin_r"]))
+    except (TypeError, ValueError):
+        margin_r = BURN_DEFAULT_SETTINGS["margin_r"]
+    background_color = normalize_hex_color(payload.get("background_color"), BURN_DEFAULT_SETTINGS["background_color"])
+    try:
+        background_opacity = int(payload.get("background_opacity", BURN_DEFAULT_SETTINGS["background_opacity"]))
+    except (TypeError, ValueError):
+        background_opacity = BURN_DEFAULT_SETTINGS["background_opacity"]
+    try:
+        background_size = int(payload.get("background_size", BURN_DEFAULT_SETTINGS["background_size"]))
+    except (TypeError, ValueError):
+        background_size = BURN_DEFAULT_SETTINGS["background_size"]
+    try:
+        background_radius = int(payload.get("background_radius", BURN_DEFAULT_SETTINGS["background_radius"]))
+    except (TypeError, ValueError):
+        background_radius = BURN_DEFAULT_SETTINGS["background_radius"]
+    try:
+        max_chars_per_line = int(payload.get("max_chars_per_line", BURN_DEFAULT_SETTINGS["max_chars_per_line"]))
+    except (TypeError, ValueError):
+        max_chars_per_line = BURN_DEFAULT_SETTINGS["max_chars_per_line"]
+    shadow = bool(payload.get("shadow", BURN_DEFAULT_SETTINGS["shadow"]))
+    background = bool(payload.get("background", BURN_DEFAULT_SETTINGS["background"]))
+
+    if size not in BURN_FONT_SIZE_OPTIONS:
+        size = BURN_DEFAULT_SETTINGS["size"]
+    if font_family not in BURN_FONT_FAMILIES:
+        font_family = BURN_DEFAULT_SETTINGS["font_family"]
+    if position not in BURN_POSITION_OPTIONS:
+        position = BURN_DEFAULT_SETTINGS["position"]
+    outline_width = max(0.0, min(6.0, outline_width))
+    line_spacing = max(0, min(12, line_spacing))
+    margin_v = max(8, min(96, margin_v))
+    margin_l = max(0, min(160, margin_l))
+    margin_r = max(0, min(160, margin_r))
+    background_opacity = max(0, min(100, background_opacity))
+    background_size = max(0, min(64, background_size))
+    background_radius = max(0, min(40, background_radius))
+    max_chars_per_line = max(0, min(48, max_chars_per_line))
+
+    return {
+        "size": size,
+        "font_family": font_family,
+        "text_color": text_color,
+        "outline_color": outline_color,
+        "outline_width": round(outline_width, 1),
+        "position": position,
+        "line_spacing": line_spacing,
+        "margin_v": margin_v,
+        "margin_l": margin_l,
+        "margin_r": margin_r,
+        "shadow": shadow,
+        "background": background,
+        "background_color": background_color,
+        "background_opacity": background_opacity,
+        "background_size": background_size,
+        "background_radius": background_radius,
+        "max_chars_per_line": max_chars_per_line,
+    }
+
+
+def srt_to_vtt_content(content: str) -> str:
+    normalized = content.replace("\r\n", "\n").replace("\r", "\n")
+    lines = normalized.split("\n")
+    converted: list[str] = ["WEBVTT", ""]
+    for line in lines:
+        if "-->" in line:
+            parts = re.split(r"\s*-->\s*", line, maxsplit=1)
+            if len(parts) == 2:
+                start = parts[0].replace(",", ".")
+                end = parts[1].replace(",", ".")
+                line = f"{start} --> {end}"
+        converted.append(line)
+    return "\n".join(converted).strip() + "\n"
+
+
 def escape_ffmpeg_subtitle_path(path: Path) -> str:
     value = str(path)
     return value.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
 
 
-def build_subtitle_filter(subtitle_path: Path) -> str:
+def build_subtitle_filter(subtitle_path: Path, settings: dict[str, Any] | None = None) -> str:
+    parsed_settings = parse_burn_settings(settings)
     escaped_path = escape_ffmpeg_subtitle_path(subtitle_path)
-    # Prefer a CJK-capable font inside the container so Traditional Chinese glyphs render.
-    return (
-        f"subtitles='{escaped_path}'"
-        ":force_style='FontName=Noto Sans CJK TC,FontSize=18,Outline=1.2,Shadow=0.6'"
-    )
+    font_size = round(BURN_BASE_FONT_SIZE * BURN_FONT_SIZE_OPTIONS[parsed_settings["size"]], 1)
+    alignment = BURN_POSITION_OPTIONS[parsed_settings["position"]]
+    background_alpha = int(round(255 * (100 - parsed_settings["background_opacity"]) / 100))
+    style_parts = [
+        f"FontName={BURN_FONT_FAMILIES[parsed_settings['font_family']]}",
+        f"FontSize={font_size}",
+        f"PrimaryColour={hex_to_ass_color(parsed_settings['text_color'])}",
+        f"OutlineColour={hex_to_ass_color(parsed_settings['outline_color'])}",
+        f"Outline={parsed_settings['outline_width']}",
+        f"Shadow={0.8 if parsed_settings['shadow'] else 0}",
+        f"Alignment={alignment}",
+        f"MarginV={parsed_settings['margin_v']}",
+        f"MarginL={parsed_settings['margin_l']}",
+        f"MarginR={parsed_settings['margin_r']}",
+        f"LineSpacing={parsed_settings['line_spacing']}",
+    ]
+    if parsed_settings["background"]:
+        style_parts.append("BorderStyle=4")
+        style_parts.append(f"BackColour={hex_to_ass_color(parsed_settings['background_color'], background_alpha)}")
+        style_parts.append("Shadow=4.2")
+    return f"subtitles='{escaped_path}':force_style='{','.join(style_parts)}'"
 
 
 def parse_progress_line(line: str) -> tuple[float | None, str | None, str]:
@@ -1063,9 +1454,12 @@ def run_download_job(job_id: str, url: str, quality: str) -> None:
         update_job(job_id, status="error", progress=0.0, status_key="progress.failed", status_text="", error=str(exc), error_key="error.download_failed")
 
 
-def run_burned_video_job(job_id: str, filename: str) -> None:
+def run_burned_video_job(job_id: str, filename: str, settings: dict[str, Any] | None = None) -> None:
     source_path = DOWNLOADS_DIR / filename
     subtitle_path = TRANSCRIPTS_DIR / f"{source_path.stem}.srt"
+    parsed_settings = parse_burn_settings(settings)
+    prepared_subtitle_path = subtitle_path
+    temp_dir: Path | None = None
 
     if not source_path.is_file():
         update_job(
@@ -1105,13 +1499,20 @@ def run_burned_video_job(job_id: str, filename: str) -> None:
 
     target_filename = build_burned_video_filename(source_path)
     target_path = DOWNLOADS_DIR / target_filename
+    if parsed_settings["max_chars_per_line"] > 0:
+        temp_dir = Path(tempfile.mkdtemp(prefix="youtube-to-mp4-burn-"))
+        prepared_subtitle_path = temp_dir / subtitle_path.name
+        prepared_subtitle_path.write_text(
+            build_wrapped_srt_content(subtitle_path.read_text(encoding="utf-8"), parsed_settings["max_chars_per_line"]),
+            encoding="utf-8",
+        )
     command = [
         "ffmpeg",
         "-y",
         "-i",
         str(source_path),
         "-vf",
-        build_subtitle_filter(subtitle_path),
+        build_subtitle_filter(prepared_subtitle_path, parsed_settings),
         "-c:a",
         "copy",
         str(target_path),
@@ -1191,6 +1592,9 @@ def run_burned_video_job(job_id: str, filename: str) -> None:
             error=str(exc),
             error_key=None,
         )
+    finally:
+        if temp_dir and temp_dir.exists():
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def prepare_runtime_cookies_file() -> str:
@@ -1694,6 +2098,28 @@ def build_api_spec() -> dict[str, Any]:
                     "type": "object",
                     "properties": {
                         "filename": {"type": "string"},
+                        "style": {
+                            "type": "object",
+                            "properties": {
+                                "size": {"type": "string", "enum": list(BURN_FONT_SIZE_OPTIONS.keys())},
+                                "font_family": {"type": "string", "enum": list(BURN_FONT_FAMILIES.keys())},
+                                "text_color": {"type": "string", "example": "#ffffff"},
+                                "outline_color": {"type": "string", "example": "#000000"},
+                                "outline_width": {"type": "number", "minimum": 0, "maximum": 6, "example": 0.8},
+                                "position": {"type": "string", "enum": list(BURN_POSITION_OPTIONS.keys())},
+                                "line_spacing": {"type": "integer", "minimum": 0, "maximum": 12},
+                                "margin_v": {"type": "integer", "minimum": 8, "maximum": 96},
+                                "margin_l": {"type": "integer", "minimum": 0, "maximum": 160},
+                                "margin_r": {"type": "integer", "minimum": 0, "maximum": 160},
+                                "shadow": {"type": "boolean"},
+                                "background": {"type": "boolean"},
+                                "background_color": {"type": "string", "example": "#000000"},
+                                "background_opacity": {"type": "integer", "minimum": 0, "maximum": 100},
+                                "background_size": {"type": "integer", "minimum": 0, "maximum": 64},
+                                "background_radius": {"type": "integer", "minimum": 0, "maximum": 40},
+                                "max_chars_per_line": {"type": "integer", "minimum": 0, "maximum": 48},
+                            },
+                        },
                     },
                     "required": ["filename"],
                 },
@@ -1905,6 +2331,7 @@ def create_transcription():
 def create_burned_video():
     payload = request.get_json(silent=True) or {}
     filename = str(payload.get("filename", "")).strip()
+    burn_settings = parse_burn_settings(payload.get("style"))
 
     if not filename:
         return jsonify({"error": "filename is required", "error_key": "burn.error.start"}), 400
@@ -1919,7 +2346,7 @@ def create_burned_video():
         return jsonify({"error": "ffmpeg is required to create a subtitle-burned MP4.", "error_key": "burn.error.ffmpeg_missing"}), 500
 
     job_id, _ = create_job()
-    worker = threading.Thread(target=run_burned_video_job, args=(job_id, filename), daemon=True)
+    worker = threading.Thread(target=run_burned_video_job, args=(job_id, filename, burn_settings), daemon=True)
     worker.start()
     return jsonify({"job_id": job_id, "status_url": f"/api/v1/jobs/{job_id}"})
 
@@ -1952,12 +2379,14 @@ def update_subtitle_content(filename: str):
     content = str(payload.get("content", ""))
     source_path = DOWNLOADS_DIR / filename
     subtitle_path = get_srt_path_for_video(filename)
+    web_caption_path = get_vtt_path_for_video(filename)
 
     if not source_path.is_file() or not subtitle_path.is_file():
         return jsonify({"error": "The SRT subtitle file could not be found for this video.", "error_key": "subtitle.error.missing"}), 404
 
     try:
         subtitle_path.write_text(content, encoding="utf-8")
+        web_caption_path.write_text(srt_to_vtt_content(content), encoding="utf-8")
         return jsonify(
             {
                 "filename": filename,
@@ -1995,6 +2424,11 @@ def media(filename: str):
 @app.get("/transcripts/<path:filename>")
 def transcripts(filename: str):
     return send_from_directory(TRANSCRIPTS_DIR, filename, as_attachment=True)
+
+
+@app.get("/captions/<path:filename>")
+def captions(filename: str):
+    return send_from_directory(TRANSCRIPTS_DIR, filename, as_attachment=False)
 
 
 if __name__ == "__main__":

@@ -283,6 +283,150 @@
           </div>
         </div>
       </section>
+
+      <section class="status-modal hidden" id="burn-settings-modal" aria-hidden="true">
+        <div class="status-dialog burn-settings-dialog">
+          <div class="status-dialog-head">
+            <div>
+              <h2 class="section-title" data-i18n="burn.settings_title">{{ translations['zh-Hant']['burn.settings_title'] }}</h2>
+              <p class="section-intro" id="burn-settings-intro">{{ translations['zh-Hant']['burn.settings_intro'] }}</p>
+            </div>
+            <button type="button" class="modal-close-button" id="burn-settings-close" aria-label="{{ translations['zh-Hant']['burn.settings_cancel'] }}" title="{{ translations['zh-Hant']['burn.settings_cancel'] }}">
+              <svg class="action-icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+            </button>
+          </div>
+          <div class="option-grid option-grid-two">
+            <label class="field-stack">
+              <span data-i18n="burn.settings_size">{{ translations['zh-Hant']['burn.settings_size'] }}</span>
+              <select id="burn-settings-size">
+                <option value="minus_20" data-i18n="burn.settings_size_minus_20">{{ translations['zh-Hant']['burn.settings_size_minus_20'] }}</option>
+                <option value="minus_10" data-i18n="burn.settings_size_minus_10">{{ translations['zh-Hant']['burn.settings_size_minus_10'] }}</option>
+                <option value="zero" data-i18n="burn.settings_size_zero">{{ translations['zh-Hant']['burn.settings_size_zero'] }}</option>
+                <option value="plus_10" data-i18n="burn.settings_size_plus_10">{{ translations['zh-Hant']['burn.settings_size_plus_10'] }}</option>
+                <option value="plus_20" data-i18n="burn.settings_size_plus_20">{{ translations['zh-Hant']['burn.settings_size_plus_20'] }}</option>
+                <option value="plus_30" data-i18n="burn.settings_size_plus_30">{{ translations['zh-Hant']['burn.settings_size_plus_30'] }}</option>
+              </select>
+            </label>
+            <label class="field-stack">
+              <span data-i18n="burn.settings_font_family">{{ translations['zh-Hant']['burn.settings_font_family'] }}</span>
+              <select id="burn-settings-font-family">
+                <option value="sans" data-i18n="burn.settings_font_family_sans">{{ translations['zh-Hant']['burn.settings_font_family_sans'] }}</option>
+                <option value="serif" data-i18n="burn.settings_font_family_serif">{{ translations['zh-Hant']['burn.settings_font_family_serif'] }}</option>
+                <option value="mono" data-i18n="burn.settings_font_family_mono">{{ translations['zh-Hant']['burn.settings_font_family_mono'] }}</option>
+              </select>
+            </label>
+          </div>
+          <div class="option-grid option-grid-three">
+            <label class="field-stack">
+              <span data-i18n="burn.settings_text_color">{{ translations['zh-Hant']['burn.settings_text_color'] }}</span>
+              <input id="burn-settings-text-color" type="color" value="#ffffff" />
+            </label>
+            <label class="field-stack">
+              <span data-i18n="burn.settings_outline_color">{{ translations['zh-Hant']['burn.settings_outline_color'] }}</span>
+              <input id="burn-settings-outline-color" type="color" value="#000000" />
+            </label>
+            <label class="field-stack">
+              <span><span data-i18n="burn.settings_outline_width">{{ translations['zh-Hant']['burn.settings_outline_width'] }}</span> <strong id="burn-settings-outline-width-value">0.8</strong></span>
+              <input id="burn-settings-outline-width" type="range" min="0" max="6" step="0.1" value="0.8" />
+            </label>
+          </div>
+          <div class="option-grid option-grid-two">
+            <label class="field-stack">
+              <span data-i18n="burn.settings_position">{{ translations['zh-Hant']['burn.settings_position'] }}</span>
+              <select id="burn-settings-position">
+                <option value="bottom" data-i18n="burn.settings_position_bottom">{{ translations['zh-Hant']['burn.settings_position_bottom'] }}</option>
+                <option value="middle" data-i18n="burn.settings_position_middle">{{ translations['zh-Hant']['burn.settings_position_middle'] }}</option>
+                <option value="top" data-i18n="burn.settings_position_top">{{ translations['zh-Hant']['burn.settings_position_top'] }}</option>
+              </select>
+            </label>
+            <label class="field-stack">
+              <span><span data-i18n="burn.settings_max_chars">{{ translations['zh-Hant']['burn.settings_max_chars'] }}</span> <strong id="burn-settings-max-chars-value">18</strong></span>
+              <input id="burn-settings-max-chars" type="range" min="0" max="48" step="1" value="18" />
+            </label>
+          </div>
+          <div class="option-grid option-grid-four">
+            <label class="field-stack">
+              <span><span data-i18n="burn.settings_line_spacing">{{ translations['zh-Hant']['burn.settings_line_spacing'] }}</span> <strong id="burn-settings-line-spacing-value">0</strong></span>
+              <input id="burn-settings-line-spacing" type="range" min="0" max="12" step="1" value="0" />
+            </label>
+            <label class="field-stack">
+              <span><span data-i18n="burn.settings_margin_v">{{ translations['zh-Hant']['burn.settings_margin_v'] }}</span> <strong id="burn-settings-margin-v-value">34</strong></span>
+              <input id="burn-settings-margin-v" type="range" min="8" max="96" step="2" value="34" />
+            </label>
+            <label class="field-stack">
+              <span><span data-i18n="burn.settings_margin_l">{{ translations['zh-Hant']['burn.settings_margin_l'] }}</span> <strong id="burn-settings-margin-l-value">42</strong></span>
+              <input id="burn-settings-margin-l" type="range" min="0" max="160" step="2" value="42" />
+            </label>
+            <label class="field-stack">
+              <span><span data-i18n="burn.settings_margin_r">{{ translations['zh-Hant']['burn.settings_margin_r'] }}</span> <strong id="burn-settings-margin-r-value">42</strong></span>
+              <input id="burn-settings-margin-r" type="range" min="0" max="160" step="2" value="42" />
+            </label>
+          </div>
+          <div class="option-grid option-grid-four">
+            <label class="field-stack">
+              <span data-i18n="burn.settings_profile">{{ translations['zh-Hant']['burn.settings_profile'] }}</span>
+              <select id="burn-settings-profile-select">
+                <option value="__custom__" data-i18n="burn.settings_profile_custom">{{ translations['zh-Hant']['burn.settings_profile_custom'] }}</option>
+              </select>
+            </label>
+            <label class="field-stack">
+              <span data-i18n="burn.settings_profile_name">{{ translations['zh-Hant']['burn.settings_profile_name'] }}</span>
+              <input
+                id="burn-settings-profile-name"
+                type="text"
+                data-i18n-placeholder="burn.settings_profile_name_placeholder"
+                placeholder="{{ translations['zh-Hant']['burn.settings_profile_name_placeholder'] }}"
+              />
+            </label>
+            <button type="button" class="secondary-button settings-inline-button" id="burn-settings-profile-save" data-i18n="burn.settings_profile_save">{{ translations['zh-Hant']['burn.settings_profile_save'] }}</button>
+            <button type="button" class="secondary-button settings-inline-button" id="burn-settings-profile-delete" data-i18n="burn.settings_profile_delete">{{ translations['zh-Hant']['burn.settings_profile_delete'] }}</button>
+          </div>
+          <div class="field-stack">
+            <span data-i18n="burn.settings_effects">{{ translations['zh-Hant']['burn.settings_effects'] }}</span>
+            <div class="toggle-grid">
+              <label class="toggle-option">
+                <input type="checkbox" id="burn-settings-shadow" />
+                <span data-i18n="burn.settings_shadow">{{ translations['zh-Hant']['burn.settings_shadow'] }}</span>
+              </label>
+              <label class="toggle-option">
+                <input type="checkbox" id="burn-settings-background" />
+                <span data-i18n="burn.settings_background">{{ translations['zh-Hant']['burn.settings_background'] }}</span>
+              </label>
+            </div>
+          </div>
+          <div class="option-grid color-grid hidden" id="burn-background-controls">
+            <label class="field-stack">
+              <span data-i18n="burn.settings_background_color">{{ translations['zh-Hant']['burn.settings_background_color'] }}</span>
+              <input id="burn-settings-background-color" type="color" value="#000000" />
+            </label>
+            <label class="field-stack">
+              <span><span data-i18n="burn.settings_background_opacity">{{ translations['zh-Hant']['burn.settings_background_opacity'] }}</span> <strong id="burn-settings-background-opacity-value">56</strong>%</span>
+              <input id="burn-settings-background-opacity" type="range" min="0" max="100" step="1" value="56" />
+            </label>
+            <label class="field-stack">
+              <span><span data-i18n="burn.settings_background_size">{{ translations['zh-Hant']['burn.settings_background_size'] }}</span> <strong id="burn-settings-background-size-value">32</strong></span>
+              <input id="burn-settings-background-size" type="range" min="0" max="64" step="1" value="32" />
+            </label>
+            <label class="field-stack">
+              <span><span data-i18n="burn.settings_background_radius">{{ translations['zh-Hant']['burn.settings_background_radius'] }}</span> <strong id="burn-settings-background-radius-value">22</strong></span>
+              <input id="burn-settings-background-radius" type="range" min="0" max="40" step="1" value="22" />
+            </label>
+          </div>
+          <div class="field-stack">
+            <span data-i18n="burn.settings_preview">{{ translations['zh-Hant']['burn.settings_preview'] }}</span>
+            <div class="burn-preview-stage" id="burn-preview-stage">
+              <div class="burn-preview-caption burn-preview-bottom" id="burn-preview-caption">
+                <span class="burn-preview-line" id="burn-preview-line-1" data-i18n="burn.settings_preview_line_1">{{ translations['zh-Hant']['burn.settings_preview_line_1'] }}</span>
+                <span class="burn-preview-line" id="burn-preview-line-2" data-i18n="burn.settings_preview_line_2">{{ translations['zh-Hant']['burn.settings_preview_line_2'] }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="confirm-actions">
+            <button type="button" class="secondary-button" id="burn-settings-cancel" data-i18n="burn.settings_cancel">{{ translations['zh-Hant']['burn.settings_cancel'] }}</button>
+            <button type="button" id="burn-settings-submit" data-i18n="burn.settings_submit">{{ translations['zh-Hant']['burn.settings_submit'] }}</button>
+          </div>
+        </div>
+      </section>
     </main>
 
     <script>
@@ -311,7 +455,7 @@
       const playerModal = document.getElementById("player-modal");
       const playerClose = document.getElementById("player-close");
       const playerVideo = document.getElementById("player-video");
-      const playerTrack = document.getElementById("player-track");
+      let playerTrack = document.getElementById("player-track");
       const playerCaptionStatus = document.getElementById("player-caption-status");
       const completionModal = document.getElementById("completion-modal");
       const completionMessage = document.getElementById("completion-message");
@@ -333,6 +477,45 @@
       const subtitleEditorSave = document.getElementById("subtitle-editor-save");
       const subtitleEditorTextarea = document.getElementById("subtitle-editor-textarea");
       const subtitleEditorError = document.getElementById("subtitle-editor-error");
+      const burnSettingsModal = document.getElementById("burn-settings-modal");
+      const burnSettingsIntro = document.getElementById("burn-settings-intro");
+      const burnSettingsClose = document.getElementById("burn-settings-close");
+      const burnSettingsCancel = document.getElementById("burn-settings-cancel");
+      const burnSettingsSubmit = document.getElementById("burn-settings-submit");
+      const burnSettingsSize = document.getElementById("burn-settings-size");
+      const burnSettingsFontFamily = document.getElementById("burn-settings-font-family");
+      const burnSettingsPosition = document.getElementById("burn-settings-position");
+      const burnSettingsTextColor = document.getElementById("burn-settings-text-color");
+      const burnSettingsOutlineColor = document.getElementById("burn-settings-outline-color");
+      const burnSettingsOutlineWidth = document.getElementById("burn-settings-outline-width");
+      const burnSettingsOutlineWidthValue = document.getElementById("burn-settings-outline-width-value");
+      const burnBackgroundControls = document.getElementById("burn-background-controls");
+      const burnSettingsBackgroundColor = document.getElementById("burn-settings-background-color");
+      const burnSettingsBackgroundOpacity = document.getElementById("burn-settings-background-opacity");
+      const burnSettingsBackgroundOpacityValue = document.getElementById("burn-settings-background-opacity-value");
+      const burnSettingsBackgroundSize = document.getElementById("burn-settings-background-size");
+      const burnSettingsBackgroundSizeValue = document.getElementById("burn-settings-background-size-value");
+      const burnSettingsBackgroundRadius = document.getElementById("burn-settings-background-radius");
+      const burnSettingsBackgroundRadiusValue = document.getElementById("burn-settings-background-radius-value");
+      const burnSettingsLineSpacing = document.getElementById("burn-settings-line-spacing");
+      const burnSettingsLineSpacingValue = document.getElementById("burn-settings-line-spacing-value");
+      const burnSettingsMarginV = document.getElementById("burn-settings-margin-v");
+      const burnSettingsMarginVValue = document.getElementById("burn-settings-margin-v-value");
+      const burnSettingsMarginL = document.getElementById("burn-settings-margin-l");
+      const burnSettingsMarginLValue = document.getElementById("burn-settings-margin-l-value");
+      const burnSettingsMarginR = document.getElementById("burn-settings-margin-r");
+      const burnSettingsMarginRValue = document.getElementById("burn-settings-margin-r-value");
+      const burnSettingsMaxChars = document.getElementById("burn-settings-max-chars");
+      const burnSettingsMaxCharsValue = document.getElementById("burn-settings-max-chars-value");
+      const burnSettingsProfileSelect = document.getElementById("burn-settings-profile-select");
+      const burnSettingsProfileName = document.getElementById("burn-settings-profile-name");
+      const burnSettingsProfileSave = document.getElementById("burn-settings-profile-save");
+      const burnSettingsProfileDelete = document.getElementById("burn-settings-profile-delete");
+      const burnSettingsShadow = document.getElementById("burn-settings-shadow");
+      const burnSettingsBackground = document.getElementById("burn-settings-background");
+      const burnPreviewCaption = document.getElementById("burn-preview-caption");
+      const burnPreviewLine1 = document.getElementById("burn-preview-line-1");
+      const burnPreviewLine2 = document.getElementById("burn-preview-line-2");
       const qualityLabelMap = {{ quality_options | tojson }};
       const transcriptionModelMap = {{ transcription_models | tojson }};
 
@@ -343,6 +526,8 @@
       let currentDownloadVideo = null;
       let currentRetranscribeVideo = null;
       let currentSubtitleEditorVideo = null;
+      let currentBurnSettingsVideo = null;
+      const burnProfilesStorageKey = "ytmp4_burn_profiles";
       const transcriptionStateByFile = {};
       const transcriptionPollers = {};
       const burnStateByFile = {};
@@ -426,6 +611,8 @@
         retranscribeCancel.setAttribute("title", t("retranscribe.cancel"));
         subtitleEditorClose.setAttribute("aria-label", t("subtitle.editor_cancel"));
         subtitleEditorClose.setAttribute("title", t("subtitle.editor_cancel"));
+        burnSettingsClose.setAttribute("aria-label", t("burn.settings_cancel"));
+        burnSettingsClose.setAttribute("title", t("burn.settings_cancel"));
         if (currentCompletionMessageKey) {
           completionMessage.textContent = t(currentCompletionMessageKey);
         }
@@ -434,6 +621,15 @@
         }
         if (currentSubtitleEditorVideo) {
           subtitleEditorIntro.textContent = `${t("subtitle.editor_intro")} ${currentSubtitleEditorVideo.title}`;
+        }
+        if (currentBurnSettingsVideo) {
+          burnSettingsIntro.textContent = tFormat("burn.settings_intro", { title: currentBurnSettingsVideo.title });
+        }
+        if (burnPreviewLine1 && burnPreviewLine2) {
+          burnPreviewLine1.textContent = t("burn.settings_preview_line_1");
+          burnPreviewLine2.textContent = t("burn.settings_preview_line_2");
+          updateBurnSliderLabels();
+          renderBurnPreview();
         }
       }
 
@@ -473,10 +669,34 @@
         hideError();
       }
 
+      function buildVersionedUrl(url, version) {
+        if (!url) {
+          return url;
+        }
+        const separator = url.includes("?") ? "&" : "?";
+        const token = version || Date.now();
+        return `${url}${separator}v=${encodeURIComponent(token)}`;
+      }
+
+      function resetPlayerTrack() {
+        if (playerTrack?.parentNode) {
+          playerTrack.parentNode.removeChild(playerTrack);
+        }
+        const freshTrack = document.createElement("track");
+        freshTrack.id = "player-track";
+        freshTrack.kind = "subtitles";
+        freshTrack.srclang = "zh";
+        freshTrack.label = "Transcript captions";
+        freshTrack.default = true;
+        playerVideo.appendChild(freshTrack);
+        playerTrack = freshTrack;
+      }
+
       function closePlayerModal() {
         playerVideo.pause();
+        playerVideo.currentTime = 0;
         playerVideo.removeAttribute("src");
-        playerTrack.removeAttribute("src");
+        resetPlayerTrack();
         playerVideo.load();
         playerCaptionStatus.textContent = t("stt.player_no_captions");
         playerModal.classList.add("hidden");
@@ -535,6 +755,179 @@
         hideSubtitleEditorError();
         subtitleEditorModal.classList.add("hidden");
         subtitleEditorModal.setAttribute("aria-hidden", "true");
+      }
+
+      function closeBurnSettingsModal() {
+        currentBurnSettingsVideo = null;
+        burnSettingsModal.classList.add("hidden");
+        burnSettingsModal.setAttribute("aria-hidden", "true");
+      }
+
+      function readStoredBurnProfiles() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(burnProfilesStorageKey) || "{}");
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function writeStoredBurnProfiles(profiles) {
+        localStorage.setItem(burnProfilesStorageKey, JSON.stringify(profiles));
+      }
+
+      function getCurrentBurnFormSettings() {
+        return {
+          size: burnSettingsSize.value,
+          font_family: burnSettingsFontFamily.value,
+          text_color: burnSettingsTextColor.value,
+          outline_color: burnSettingsOutlineColor.value,
+          outline_width: Number(burnSettingsOutlineWidth.value) || 0,
+          position: burnSettingsPosition.value,
+          line_spacing: Number(burnSettingsLineSpacing.value) || 0,
+          margin_v: Number(burnSettingsMarginV.value) || 34,
+          margin_l: Number(burnSettingsMarginL.value) || 42,
+          margin_r: Number(burnSettingsMarginR.value) || 42,
+          shadow: burnSettingsShadow.checked,
+          background: burnSettingsBackground.checked,
+          background_color: burnSettingsBackgroundColor.value,
+          background_opacity: Number(burnSettingsBackgroundOpacity.value) || 56,
+          background_size: Number(burnSettingsBackgroundSize.value) || 32,
+          background_radius: Number(burnSettingsBackgroundRadius.value) || 22,
+          max_chars_per_line: Number(burnSettingsMaxChars.value) || 18,
+        };
+      }
+
+      function applyBurnSettingsToForm(settings = {}) {
+        burnSettingsSize.value = settings.size || "zero";
+        burnSettingsFontFamily.value = settings.font_family || "sans";
+        burnSettingsTextColor.value = settings.text_color || "#ffffff";
+        burnSettingsOutlineColor.value = settings.outline_color || "#000000";
+        burnSettingsOutlineWidth.value = String(settings.outline_width ?? 0.8);
+        burnSettingsPosition.value = settings.position || "bottom";
+        burnSettingsLineSpacing.value = String(settings.line_spacing ?? 0);
+        burnSettingsMarginV.value = String(settings.margin_v ?? 34);
+        burnSettingsMarginL.value = String(settings.margin_l ?? 42);
+        burnSettingsMarginR.value = String(settings.margin_r ?? 42);
+        burnSettingsShadow.checked = Boolean(settings.shadow);
+        burnSettingsBackground.checked = Boolean(settings.background);
+        burnSettingsBackgroundColor.value = settings.background_color || "#000000";
+        burnSettingsBackgroundOpacity.value = String(settings.background_opacity ?? 56);
+        burnSettingsBackgroundSize.value = String(settings.background_size ?? 32);
+        burnSettingsBackgroundRadius.value = String(settings.background_radius ?? 22);
+        burnSettingsMaxChars.value = String(settings.max_chars_per_line ?? 18);
+        updateBurnSliderLabels();
+        syncBurnBackgroundControls();
+        renderBurnPreview();
+      }
+
+      function refreshBurnProfileOptions(selectedKey = "__custom__") {
+        const profiles = readStoredBurnProfiles();
+        burnSettingsProfileSelect.innerHTML = "";
+        const customOption = document.createElement("option");
+        customOption.value = "__custom__";
+        customOption.textContent = t("burn.settings_profile_custom");
+        burnSettingsProfileSelect.appendChild(customOption);
+        Object.keys(profiles).sort().forEach((name) => {
+          const option = document.createElement("option");
+          option.value = name;
+          option.textContent = name;
+          burnSettingsProfileSelect.appendChild(option);
+        });
+        burnSettingsProfileSelect.value = profiles[selectedKey] ? selectedKey : "__custom__";
+      }
+
+      function updateBurnSliderLabels() {
+        burnSettingsOutlineWidthValue.textContent = Number(burnSettingsOutlineWidth.value || 0).toFixed(1);
+        burnSettingsLineSpacingValue.textContent = burnSettingsLineSpacing.value;
+        burnSettingsMarginVValue.textContent = burnSettingsMarginV.value;
+        burnSettingsMarginLValue.textContent = burnSettingsMarginL.value;
+        burnSettingsMarginRValue.textContent = burnSettingsMarginR.value;
+        burnSettingsBackgroundOpacityValue.textContent = burnSettingsBackgroundOpacity.value;
+        burnSettingsBackgroundSizeValue.textContent = burnSettingsBackgroundSize.value;
+        burnSettingsBackgroundRadiusValue.textContent = burnSettingsBackgroundRadius.value;
+        burnSettingsMaxCharsValue.textContent = burnSettingsMaxChars.value;
+      }
+
+      function syncBurnBackgroundControls() {
+        burnBackgroundControls.classList.toggle("hidden", !burnSettingsBackground.checked);
+      }
+
+      function renderBurnPreview() {
+        const sizeMultipliers = {
+          minus_20: 0.8,
+          minus_10: 0.9,
+          zero: 1,
+          plus_10: 1.1,
+          plus_20: 1.2,
+          plus_30: 1.3,
+        };
+        const positionClassMap = {
+          bottom: "burn-preview-bottom",
+          middle: "burn-preview-middle",
+          top: "burn-preview-top",
+        };
+
+        const fontSize = 18 * (sizeMultipliers[burnSettingsSize.value] || 1.2);
+        const lineHeight = 1.2 + (Number(burnSettingsLineSpacing.value) || 0) * 0.04;
+        const outlineColor = burnSettingsOutlineColor.value;
+        const outlineWidth = Math.max(0, Number(burnSettingsOutlineWidth.value) || 0);
+        const previewOutline = Math.max(0, Math.round(outlineWidth * 1.5));
+        const glowShadows = previewOutline > 0 ? [
+          `${previewOutline}px ${previewOutline}px 0 ${outlineColor}`,
+          `${-previewOutline}px ${previewOutline}px 0 ${outlineColor}`,
+          `${previewOutline}px ${-previewOutline}px 0 ${outlineColor}`,
+          `${-previewOutline}px ${-previewOutline}px 0 ${outlineColor}`,
+          `0 ${previewOutline}px 0 ${outlineColor}`,
+          `${previewOutline}px 0 0 ${outlineColor}`,
+          `0 ${-previewOutline}px 0 ${outlineColor}`,
+          `${-previewOutline}px 0 0 ${outlineColor}`,
+        ] : [];
+        if (burnSettingsShadow.checked) {
+          glowShadows.push("0 6px 14px rgba(0, 0, 0, 0.45)");
+        }
+
+        burnPreviewCaption.classList.remove("burn-preview-bottom", "burn-preview-middle", "burn-preview-top");
+        burnPreviewCaption.classList.add(positionClassMap[burnSettingsPosition.value] || "burn-preview-bottom");
+        burnPreviewCaption.style.fontSize = `${fontSize}px`;
+        burnPreviewCaption.style.lineHeight = `${lineHeight}`;
+        burnPreviewCaption.style.color = burnSettingsTextColor.value;
+        burnPreviewCaption.style.textShadow = glowShadows.join(", ");
+        burnPreviewCaption.style.fontFamily = burnSettingsFontFamily.value === "serif"
+          ? "\"Noto Serif TC\", \"Noto Serif CJK TC\", serif"
+          : burnSettingsFontFamily.value === "mono"
+            ? "\"Noto Sans Mono CJK TC\", monospace"
+            : "\"Noto Sans TC\", \"Noto Sans CJK TC\", sans-serif";
+        burnPreviewCaption.style.background = burnSettingsBackground.checked
+          ? `${burnSettingsBackgroundColor.value}${Math.round((Number(burnSettingsBackgroundOpacity.value) || 0) * 2.55).toString(16).padStart(2, "0")}`
+          : "transparent";
+        burnPreviewCaption.style.padding = burnSettingsBackground.checked
+          ? `${Math.max(10, Math.round((Number(burnSettingsBackgroundSize.value) || 32) * 0.44))}px ${Number(burnSettingsBackgroundSize.value) || 32}px`
+          : "0";
+        burnPreviewCaption.style.borderRadius = burnSettingsBackground.checked
+          ? `${Number(burnSettingsBackgroundRadius.value) || 22}px`
+          : "0";
+        burnPreviewCaption.style.marginBottom = burnSettingsPosition.value === "bottom" ? `${burnSettingsMarginV.value}px` : "0";
+        burnPreviewCaption.style.marginTop = burnSettingsPosition.value === "top" ? `${burnSettingsMarginV.value}px` : "0";
+        burnPreviewCaption.style.marginLeft = `${burnSettingsMarginL.value}px`;
+        burnPreviewCaption.style.marginRight = `${burnSettingsMarginR.value}px`;
+        burnPreviewCaption.style.maxWidth = `calc(100% - ${Number(burnSettingsMarginL.value) + Number(burnSettingsMarginR.value)}px)`;
+
+        const previewLines = [
+          t("burn.settings_preview_line_1"),
+          t("burn.settings_preview_line_2"),
+        ];
+        const maxChars = Number(burnSettingsMaxChars.value) || 0;
+        const wrappedPreview = maxChars > 0
+          ? previewLines.flatMap((line) => {
+              const chunks = [];
+              for (let index = 0; index < line.length; index += maxChars) {
+                chunks.push(line.slice(index, index + maxChars));
+              }
+              return chunks;
+            })
+          : previewLines;
+        burnPreviewCaption.innerHTML = wrappedPreview.map((line) => `<span class="burn-preview-line">${line}</span>`).join("");
       }
 
       function buildIcon(iconName) {
@@ -658,12 +1051,16 @@
       }
 
       function openPlayerModal(video) {
-        playerVideo.src = video.media_url;
+        playerVideo.pause();
+        playerVideo.currentTime = 0;
+        playerVideo.removeAttribute("src");
+        resetPlayerTrack();
+        playerVideo.src = buildVersionedUrl(video.media_url, video.media_version);
         if (video.captions_url) {
-          playerTrack.src = video.captions_url;
+          playerTrack.src = buildVersionedUrl(video.captions_url, video.captions_version);
+          playerTrack.mode = "showing";
           playerCaptionStatus.textContent = t("stt.player_with_captions");
         } else {
-          playerTrack.removeAttribute("src");
           playerCaptionStatus.textContent = t("stt.player_no_captions");
         }
         playerVideo.load();
@@ -888,7 +1285,21 @@
         });
       }
 
-      async function startBurnedVideo(video) {
+      function collectBurnSettings() {
+        return getCurrentBurnFormSettings();
+      }
+
+      function openBurnSettingsModal(video) {
+        currentBurnSettingsVideo = video;
+        refreshBurnProfileOptions();
+        applyBurnSettingsToForm({});
+        burnSettingsProfileName.value = "";
+        burnSettingsIntro.textContent = tFormat("burn.settings_intro", { title: video.title });
+        burnSettingsModal.classList.remove("hidden");
+        burnSettingsModal.setAttribute("aria-hidden", "false");
+      }
+
+      async function startBurnedVideo(video, burnStyle) {
         hideTranscriptError();
         setBurnState(video.filename, {
           active: true,
@@ -901,6 +1312,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             filename: video.filename,
+            style: burnStyle,
           }),
         });
         const data = await response.json();
@@ -1047,8 +1459,8 @@
 
             const burnButton = createIconButton("burn", t("action.burn_subtitles"));
             burnButton.disabled = Boolean(burnState?.active);
-            burnButton.addEventListener("click", async () => {
-              await startBurnedVideo(video);
+            burnButton.addEventListener("click", () => {
+              openBurnSettingsModal(video);
             });
             actions.appendChild(burnButton);
           }
@@ -1313,27 +1725,86 @@
       });
       refreshVideosButton.addEventListener("click", loadVideos);
       playerClose.addEventListener("click", closePlayerModal);
-      playerModal.addEventListener("click", (event) => {
-        if (event.target === playerModal) {
-          closePlayerModal();
-        }
-      });
       completionClose.addEventListener("click", closeCompletionModal);
-      completionModal.addEventListener("click", (event) => {
-        if (event.target === completionModal) {
-          closeCompletionModal();
-        }
-      });
       downloadModalClose.addEventListener("click", closeDownloadModal);
-      downloadModal.addEventListener("click", (event) => {
-        if (event.target === downloadModal) {
-          closeDownloadModal();
-        }
-      });
       retranscribeCancel.addEventListener("click", closeRetranscribeModal);
       subtitleEditorClose.addEventListener("click", closeSubtitleEditorModal);
       subtitleEditorCancel.addEventListener("click", closeSubtitleEditorModal);
       subtitleEditorSave.addEventListener("click", saveSubtitleEditor);
+      burnSettingsClose.addEventListener("click", closeBurnSettingsModal);
+      burnSettingsCancel.addEventListener("click", closeBurnSettingsModal);
+      burnSettingsProfileSelect.addEventListener("change", () => {
+        const profiles = readStoredBurnProfiles();
+        const selectedKey = burnSettingsProfileSelect.value;
+        if (selectedKey === "__custom__" || !profiles[selectedKey]) {
+          return;
+        }
+        applyBurnSettingsToForm(profiles[selectedKey]);
+        burnSettingsProfileName.value = selectedKey;
+      });
+      burnSettingsProfileSave.addEventListener("click", () => {
+        const profileName = burnSettingsProfileName.value.trim();
+        if (!profileName) {
+          showTranscriptError(t("burn.settings_profile_name"));
+          return;
+        }
+        const profiles = readStoredBurnProfiles();
+        profiles[profileName] = getCurrentBurnFormSettings();
+        writeStoredBurnProfiles(profiles);
+        refreshBurnProfileOptions(profileName);
+      });
+      burnSettingsProfileDelete.addEventListener("click", () => {
+        const selectedKey = burnSettingsProfileSelect.value;
+        if (!selectedKey || selectedKey === "__custom__") {
+          return;
+        }
+        const profiles = readStoredBurnProfiles();
+        delete profiles[selectedKey];
+        writeStoredBurnProfiles(profiles);
+        burnSettingsProfileName.value = "";
+        refreshBurnProfileOptions();
+      });
+        [
+          burnSettingsSize,
+          burnSettingsFontFamily,
+          burnSettingsTextColor,
+          burnSettingsOutlineColor,
+          burnSettingsOutlineWidth,
+          burnSettingsPosition,
+          burnSettingsBackgroundColor,
+          burnSettingsBackgroundOpacity,
+          burnSettingsBackgroundSize,
+          burnSettingsBackgroundRadius,
+          burnSettingsLineSpacing,
+        burnSettingsMarginV,
+        burnSettingsMarginL,
+        burnSettingsMarginR,
+        burnSettingsMaxChars,
+        burnSettingsShadow,
+        burnSettingsBackground,
+      ].forEach((control) => {
+        control.addEventListener("input", () => {
+          updateBurnSliderLabels();
+          syncBurnBackgroundControls();
+          renderBurnPreview();
+          burnSettingsProfileSelect.value = "__custom__";
+        });
+        control.addEventListener("change", () => {
+          updateBurnSliderLabels();
+          syncBurnBackgroundControls();
+          renderBurnPreview();
+          burnSettingsProfileSelect.value = "__custom__";
+        });
+      });
+      burnSettingsSubmit.addEventListener("click", async () => {
+        if (!currentBurnSettingsVideo) {
+          return;
+        }
+        const targetVideo = currentBurnSettingsVideo;
+        const settings = collectBurnSettings();
+        closeBurnSettingsModal();
+        await startBurnedVideo(targetVideo, settings);
+      });
       retranscribeConfirm.addEventListener("click", async () => {
         if (!currentRetranscribeVideo) {
           return;
@@ -1341,16 +1812,6 @@
         const targetVideo = currentRetranscribeVideo;
         closeRetranscribeModal();
         await startTranscription(targetVideo);
-      });
-      retranscribeModal.addEventListener("click", (event) => {
-        if (event.target === retranscribeModal) {
-          closeRetranscribeModal();
-        }
-      });
-      subtitleEditorModal.addEventListener("click", (event) => {
-        if (event.target === subtitleEditorModal) {
-          closeSubtitleEditorModal();
-        }
       });
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && !playerModal.classList.contains("hidden")) {
@@ -1367,6 +1828,9 @@
         }
         if (event.key === "Escape" && !subtitleEditorModal.classList.contains("hidden")) {
           closeSubtitleEditorModal();
+        }
+        if (event.key === "Escape" && !burnSettingsModal.classList.contains("hidden")) {
+          closeBurnSettingsModal();
         }
       });
     </script>
