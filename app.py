@@ -22,6 +22,7 @@ from urllib import request as urllib_request
 from flask import Flask, jsonify, render_template, request, send_from_directory
 from markupsafe import Markup
 from PIL import Image, ImageDraw, ImageFont
+import requests
 from werkzeug.utils import secure_filename
 
 
@@ -1193,6 +1194,56 @@ def stt_request(path: str, method: str = "GET", payload: dict[str, Any] | None =
         return exc.code, json.loads(body) if body else {"error": str(exc)}
     except (urllib_error.URLError, TimeoutError):
         return 503, {"error": "STT service unavailable", "error_key": "stt.error.service_unavailable"}
+
+
+def stt_upload_job(source_path: Path, model: str) -> tuple[int, dict[str, Any]]:
+    try:
+        with source_path.open("rb") as source_file:
+            response = requests.post(
+                f"{STT_API_URL}/jobs",
+                data={"filename": source_path.name, "model": model},
+                files={"file": (source_path.name, source_file, "video/mp4")},
+                timeout=300,
+            )
+    except (OSError, requests.RequestException):
+        return 503, {"error": "STT service unavailable", "error_key": "stt.error.service_unavailable"}
+
+    try:
+        body = response.json() if response.content else {}
+    except ValueError:
+        body = {"error": response.text or f"Unexpected STT response ({response.status_code})"}
+    return response.status_code, body
+
+
+def sync_remote_transcription_artifacts(job_id: str, filename: str, output_files: dict[str, str]) -> tuple[bool, str | None]:
+    if not output_files:
+        return False, "STT output files are missing."
+
+    local_targets = {file_type: TRANSCRIPTS_DIR / output_name for file_type, output_name in output_files.items()}
+    if local_targets and all(path.is_file() for path in local_targets.values()):
+        return True, None
+
+    status_code, payload = stt_request(f"/jobs/{job_id}/artifacts")
+    if status_code >= 400:
+        return False, str(payload.get("error") or "Failed to download STT artifacts.")
+
+    artifacts = payload.get("artifacts", {})
+    if not artifacts:
+        return False, "STT artifacts payload is empty."
+
+    for file_type, artifact in artifacts.items():
+        output_name = output_files.get(file_type)
+        if not output_name:
+            continue
+        content = artifact.get("content")
+        if content is None:
+            continue
+        (TRANSCRIPTS_DIR / output_name).write_text(str(content), encoding="utf-8")
+
+    stem = Path(filename).stem
+    if not (TRANSCRIPTS_DIR / f"{stem}.vtt").is_file():
+        return False, "Failed to save transcript files locally."
+    return True, None
 
 
 def update_job(job_id: str, **changes: Any) -> None:
@@ -2841,7 +2892,7 @@ def upload_video():
                 "source_type": "upload",
             },
         )
-        status_code, data = stt_request("/jobs", method="POST", payload={"filename": target_filename, "model": model})
+        status_code, data = stt_upload_job(target_path, model)
         if status_code >= 400:
             return jsonify(data), status_code
 
@@ -2872,7 +2923,7 @@ def create_transcription():
     if not (DOWNLOADS_DIR / filename).is_file():
         return jsonify({"error": "Source MP4 file not found.", "error_key": "stt.error.start"}), 404
 
-    status_code, data = stt_request("/jobs", method="POST", payload={"filename": filename, "model": model})
+    status_code, data = stt_upload_job(DOWNLOADS_DIR / filename, model)
     return jsonify(data), status_code
 
 
@@ -2953,6 +3004,11 @@ def update_subtitle_content(filename: str):
 def transcription_status(job_id: str):
     status_code, data = stt_request(f"/jobs/{job_id}")
     output_files = data.get("output_files", {})
+    filename = str(data.get("filename", "")).strip()
+    if status_code < 400 and data.get("status") == "completed" and output_files and filename:
+        synced, sync_error = sync_remote_transcription_artifacts(job_id, filename, output_files)
+        if not synced and sync_error:
+            data["sync_error"] = sync_error
     if output_files:
         data["download_urls"] = {
             key: f"/transcripts/{value}"

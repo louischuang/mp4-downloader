@@ -1,0 +1,52 @@
+services:
+  whisper-stt:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: docker/stt/Dockerfile.gpu-x64
+    container_name: whisper-stt-cuda
+    gpus: all
+    ports:
+      - "19000:8000"
+    environment:
+      # Shared storage paths:
+      # The main web service only sends `filename` to the STT API.
+      # This Whisper server must be able to read the same MP4 files and
+      # write transcript files into a shared location that the web service
+      # can also access, for example via NFS / SMB / NAS mount.
+      STT_INPUT_DIR: /data/input
+      STT_OUTPUT_DIR: /data/output
+      HF_HOME: /models/huggingface
+
+      # Runtime settings for x64 + NVIDIA CUDA.
+      STT_DEFAULT_MODEL: large-v3
+      STT_DEVICE: cuda
+      STT_COMPUTE_TYPE_GPU: float16
+      STT_COMPUTE_TYPE_CPU: int8
+
+      # Optional cache/network tuning.
+      PYTHONUNBUFFERED: "1"
+      HUGGINGFACE_HUB_CACHE: /models/huggingface
+    volumes:
+      # Uploaded MP4 files and generated transcript artifacts live inside
+      # dedicated writable volumes. The web service no longer needs a shared
+      # filesystem because it uploads MP4 files to the STT service directly
+      # and then downloads transcript artifacts back after completion.
+      - whisper-stt-input:/data/input
+      - whisper-stt-output:/data/output
+      - ./models:/models/huggingface
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=5)
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  whisper-stt-input:
+  whisper-stt-output:

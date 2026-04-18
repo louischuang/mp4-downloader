@@ -10,6 +10,7 @@ from typing import Any
 
 from faster_whisper import WhisperModel
 from flask import Flask, jsonify, request
+from werkzeug.utils import secure_filename
 
 
 INPUT_DIR = Path(os.getenv("STT_INPUT_DIR", "/data/input")).resolve()
@@ -70,6 +71,12 @@ def create_job(filename: str, model_name: str) -> dict[str, Any]:
     }
     with jobs_lock:
         jobs[job_id] = job
+    return job
+
+
+def create_uploaded_job(filename: str, model_name: str, cleanup_source: bool) -> dict[str, Any]:
+    job = create_job(filename, model_name)
+    job["cleanup_source"] = cleanup_source
     return job
 
 
@@ -174,6 +181,43 @@ def write_vtt(path: Path, segments: list[dict[str, Any]]) -> None:
     path.write_text("\n\n".join(blocks) + "\n", encoding="utf-8")
 
 
+def cleanup_source_file(job_id: str, source_path: Path) -> None:
+    job = get_job(job_id) or {}
+    if not job.get("cleanup_source"):
+        return
+    source_path.unlink(missing_ok=True)
+
+
+def save_uploaded_source(uploaded_file: Any, requested_filename: str) -> str:
+    original_name = str(requested_filename or getattr(uploaded_file, "filename", "")).strip()
+    candidate_name = secure_filename(Path(original_name or "uploaded.mp4").name) or f"upload-{uuid.uuid4().hex}.mp4"
+    if not candidate_name.lower().endswith(".mp4"):
+        candidate_name = f"{Path(candidate_name).stem}.mp4"
+
+    unique_name = candidate_name
+    counter = 2
+    while (INPUT_DIR / unique_name).exists():
+        unique_name = f"{Path(candidate_name).stem}-{counter}.mp4"
+        counter += 1
+
+    target_path = INPUT_DIR / unique_name
+    uploaded_file.save(target_path)
+    return unique_name
+
+
+def serialize_output_files(output_files: dict[str, str]) -> dict[str, Any]:
+    artifacts: dict[str, Any] = {}
+    for file_type, filename in output_files.items():
+        path = OUTPUT_DIR / filename
+        if not path.is_file():
+            continue
+        artifacts[file_type] = {
+            "filename": filename,
+            "content": path.read_text(encoding="utf-8"),
+        }
+    return artifacts
+
+
 def run_transcription(job_id: str, filename: str, model_name: str) -> None:
     source_path = INPUT_DIR / filename
     if not source_path.is_file():
@@ -238,8 +282,10 @@ def run_transcription(job_id: str, filename: str, model_name: str) -> None:
             },
             error=None,
         )
+        cleanup_source_file(job_id, source_path)
     except Exception as exc:
         update_job(job_id, status="error", progress=0.0, status_key="stt.failed", error=str(exc))
+        cleanup_source_file(job_id, source_path)
 
 
 @app.get("/health")
@@ -249,14 +295,25 @@ def health():
 
 @app.post("/jobs")
 def create_transcription_job():
-    payload = request.get_json(silent=True) or {}
-    filename = str(payload.get("filename", "")).strip()
-    model_name = str(payload.get("model", DEFAULT_MODEL)).strip() or DEFAULT_MODEL
+    uploaded_file = request.files.get("file")
 
-    if not filename:
-        return jsonify({"error": "filename is required"}), 400
+    if uploaded_file:
+        model_name = str(request.form.get("model", DEFAULT_MODEL)).strip() or DEFAULT_MODEL
+        requested_filename = str(request.form.get("filename", uploaded_file.filename or "")).strip()
+        try:
+            filename = save_uploaded_source(uploaded_file, requested_filename)
+        except OSError:
+            return jsonify({"error": "failed to save uploaded file"}), 500
+        job = create_uploaded_job(filename, model_name, cleanup_source=True)
+    else:
+        payload = request.get_json(silent=True) or {}
+        filename = str(payload.get("filename", "")).strip()
+        model_name = str(payload.get("model", DEFAULT_MODEL)).strip() or DEFAULT_MODEL
 
-    job = create_job(filename, model_name)
+        if not filename:
+            return jsonify({"error": "filename is required"}), 400
+        job = create_uploaded_job(filename, model_name, cleanup_source=False)
+
     worker = threading.Thread(target=run_transcription, args=(job["id"], filename, model_name), daemon=True)
     worker.start()
     return jsonify({"job_id": job["id"]}), 202
@@ -268,6 +325,25 @@ def job_status(job_id: str):
     if not job:
         return jsonify({"error": "job not found"}), 404
     return jsonify(job)
+
+
+@app.get("/jobs/<job_id>/artifacts")
+def job_artifacts(job_id: str):
+    job = get_job(job_id)
+    if not job:
+        return jsonify({"error": "job not found"}), 404
+    if job.get("status") != "completed":
+        return jsonify({"error": "job not completed"}), 409
+
+    output_files = job.get("output_files", {})
+    return jsonify(
+        {
+            "job_id": job_id,
+            "filename": job.get("filename"),
+            "output_files": output_files,
+            "artifacts": serialize_output_files(output_files),
+        }
+    )
 
 
 if __name__ == "__main__":
