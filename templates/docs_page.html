@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ page_title }} | YouTube to MP4 Downloader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero doc-hero">
+        <p class="eyebrow">Documentation</p>
+        <h1>{{ doc_title }}</h1>
+        <p class="intro">這個頁面會直接同步顯示專案中的 Markdown 文件內容，方便在網站內查閱。</p>
+      </section>
+
+      <section class="panel doc-panel">
+        <article class="doc-content markdown-body">
+          {{ doc_html }}
+        </article>
+      </section>
+
+      <footer class="app-footer">
+        <nav class="bottom-menu">
+          <a href="/" class="bottom-menu-link">首頁</a>
+          <a href="/tool-usage" class="bottom-menu-link{{ ' active' if active_doc == 'tool-usage' else '' }}">功能說明</a>
+          <a href="/cli-guide" class="bottom-menu-link{{ ' active' if active_doc == 'cli-guide' else '' }}">CLI 指引</a>
+        </nav>
+        <span>Version {{ app_version }}</span>
+      </footer>
+    </main>
+  </body>
+</html>

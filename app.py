@@ -10,6 +10,7 @@ import threading
 import uuid
 import json
 import math
+import html
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -19,6 +20,7 @@ from urllib import error as urllib_error
 from urllib import request as urllib_request
 
 from flask import Flask, jsonify, render_template, request, send_from_directory
+from markupsafe import Markup
 from PIL import Image, ImageDraw, ImageFont
 from werkzeug.utils import secure_filename
 
@@ -51,6 +53,8 @@ def load_app_version() -> str:
 
 
 API_VERSION = load_app_version()
+TOOL_USAGE_DOC_PATH = BASE_DIR / "docs" / "TOOL_USAGE.md"
+CLI_GUIDE_DOC_PATH = BASE_DIR / "docs" / "CLI_GUIDE.md"
 BURN_BASE_FONT_SIZE = 50.0
 BURN_FONT_SIZE_OPTIONS = {
     "minus_20": 0.8,
@@ -1985,6 +1989,103 @@ def build_runtime_warning() -> str | None:
     return " ".join(warnings)
 
 
+def render_markdown_inline(text: str) -> str:
+    escaped = html.escape(text)
+    escaped = re.sub(r"`([^`]+)`", lambda match: f"<code>{match.group(1)}</code>", escaped)
+    escaped = re.sub(r"\*\*([^*]+)\*\*", lambda match: f"<strong>{match.group(1)}</strong>", escaped)
+    escaped = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", lambda match: f'<a href="{match.group(2)}">{match.group(1)}</a>', escaped)
+    return escaped
+
+
+def render_markdown_document(content: str) -> Markup:
+    lines = content.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    html_parts: list[str] = []
+    paragraph_lines: list[str] = []
+    list_items: list[str] = []
+    list_tag: str | None = None
+    in_code_block = False
+    code_block_lines: list[str] = []
+    code_language = ""
+
+    def flush_paragraph() -> None:
+        nonlocal paragraph_lines
+        if paragraph_lines:
+            paragraph = " ".join(part.strip() for part in paragraph_lines if part.strip())
+            if paragraph:
+                html_parts.append(f"<p>{render_markdown_inline(paragraph)}</p>")
+            paragraph_lines = []
+
+    def flush_list() -> None:
+        nonlocal list_items, list_tag
+        if list_items and list_tag:
+            items = "".join(f"<li>{render_markdown_inline(item)}</li>" for item in list_items)
+            html_parts.append(f"<{list_tag}>{items}</{list_tag}>")
+        list_items = []
+        list_tag = None
+
+    def flush_code_block() -> None:
+        nonlocal code_block_lines, code_language
+        code = "\n".join(code_block_lines)
+        language_class = f' class="language-{html.escape(code_language)}"' if code_language else ""
+        html_parts.append(f"<pre><code{language_class}>{html.escape(code)}</code></pre>")
+        code_block_lines = []
+        code_language = ""
+
+    for raw_line in lines:
+        line = raw_line.rstrip()
+        stripped = line.strip()
+
+        if stripped.startswith("```"):
+            flush_paragraph()
+            flush_list()
+            if in_code_block:
+                flush_code_block()
+                in_code_block = False
+            else:
+                in_code_block = True
+                code_language = stripped[3:].strip()
+            continue
+
+        if in_code_block:
+            code_block_lines.append(raw_line)
+            continue
+
+        if not stripped:
+            flush_paragraph()
+            flush_list()
+            continue
+
+        heading_match = re.match(r"^(#{1,6})\s+(.*)$", stripped)
+        if heading_match:
+            flush_paragraph()
+            flush_list()
+            level = len(heading_match.group(1))
+            html_parts.append(f"<h{level}>{render_markdown_inline(heading_match.group(2).strip())}</h{level}>")
+            continue
+
+        unordered_match = re.match(r"^-\s+(.*)$", stripped)
+        ordered_match = re.match(r"^\d+\.\s+(.*)$", stripped)
+        if unordered_match or ordered_match:
+            flush_paragraph()
+            next_tag = "ul" if unordered_match else "ol"
+            item_text = (unordered_match or ordered_match).group(1).strip()
+            if list_tag and list_tag != next_tag:
+                flush_list()
+            list_tag = next_tag
+            list_items.append(item_text)
+            continue
+
+        flush_list()
+        paragraph_lines.append(stripped)
+
+    flush_paragraph()
+    flush_list()
+    if in_code_block:
+        flush_code_block()
+
+    return Markup("\n".join(html_parts))
+
+
 def build_api_spec() -> dict[str, Any]:
     server_url = request.url_root.rstrip("/")
     return {
@@ -2590,6 +2691,14 @@ def build_capabilities_payload() -> dict[str, Any]:
     }
 
 
+def load_doc_page(path: Path) -> Markup:
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError:
+        content = "# File Not Found\n\nUnable to load this document."
+    return render_markdown_document(content)
+
+
 @app.get("/")
 def index():
     return render_template(
@@ -2599,6 +2708,30 @@ def index():
         quality_options=QUALITY_OPTIONS,
         transcription_models=TRANSCRIPTION_MODELS,
         translations=TRANSLATIONS,
+        app_version=API_VERSION,
+    )
+
+
+@app.get("/tool-usage")
+def tool_usage_page():
+    return render_template(
+        "docs_page.html",
+        page_title="功能說明",
+        doc_title="功能說明",
+        doc_html=load_doc_page(TOOL_USAGE_DOC_PATH),
+        active_doc="tool-usage",
+        app_version=API_VERSION,
+    )
+
+
+@app.get("/cli-guide")
+def cli_guide_page():
+    return render_template(
+        "docs_page.html",
+        page_title="CLI 指引",
+        doc_title="CLI 指引",
+        doc_html=load_doc_page(CLI_GUIDE_DOC_PATH),
+        active_doc="cli-guide",
         app_version=API_VERSION,
     )
 
