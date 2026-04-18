@@ -23,3 +23,4 @@ This project includes:
 - CLI wrapper at `python3 cli.py`
 - End-to-end API test script at `python3 scripts/e2e_api_test.py`
 - In-browser SRT subtitle editing and subtitle-burned MP4 generation from the video list
+- Burned subtitle styling with configurable font family, size, colors, outline, spacing, margins, and translucent background

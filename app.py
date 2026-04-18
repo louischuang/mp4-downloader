@@ -9,7 +9,9 @@ import textwrap
 import threading
 import uuid
 import json
+import math
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -17,6 +19,7 @@ from urllib import error as urllib_error
 from urllib import request as urllib_request
 
 from flask import Flask, jsonify, render_template, request, send_from_directory
+from PIL import Image, ImageDraw, ImageFont
 from werkzeug.utils import secure_filename
 
 
@@ -34,7 +37,7 @@ YTDLP_REMOTE_COMPONENTS = os.getenv("YTDLP_REMOTE_COMPONENTS", "ejs:github").str
 STT_API_URL = os.getenv("STT_API_URL", "http://stt-service:8000").rstrip("/")
 STT_DEFAULT_MODEL = os.getenv("STT_DEFAULT_MODEL", "small").strip() or "small"
 API_VERSION = "1.0.0"
-BURN_BASE_FONT_SIZE = 25.0
+BURN_BASE_FONT_SIZE = 50.0
 BURN_FONT_SIZE_OPTIONS = {
     "minus_20": 0.8,
     "minus_10": 0.9,
@@ -72,6 +75,10 @@ BURN_POSITION_OPTIONS = {
     "middle": 5,
     "top": 8,
 }
+BURN_BACKGROUND_HORIZONTAL_PADDING_FACTOR = 0.25
+BURN_BACKGROUND_VERTICAL_PADDING_FACTOR = 0.44
+BURN_BACKGROUND_MIN_VERTICAL_PADDING = 10
+BURN_BACKGROUND_WIDTH_SCALE = 0.85
 
 YOUTUBE_HOSTS = {
     "youtube.com",
@@ -176,15 +183,21 @@ TRANSLATIONS = {
         "action.transcribed": "已轉換",
         "action.retranscribe": "重新轉文字",
         "action.burn_subtitles": "產生燒錄 MP4",
+        "action.delete": "刪除影片",
         "retranscribe.title": "重新轉文字",
         "retranscribe.message": "要重新為「{title}」執行一次文字轉換嗎？",
         "retranscribe.confirm": "重新轉換",
         "retranscribe.cancel": "取消",
+        "delete_video.title": "刪除影片",
+        "delete_video.message": "確定要刪除「{title}」嗎？這會一起刪除影片、字幕與逐字稿檔案。",
+        "delete_video.confirm": "確認刪除",
+        "delete_video.cancel": "取消",
         "modal.completed_title": "作業完成",
         "modal.completed_download": "已完成下載。",
         "modal.completed_download_transcribe": "已完成下載與轉文字。",
         "modal.completed_burned_video": "已完成燒錄字幕 MP4。",
         "modal.completed_subtitle_save": "字幕已儲存。",
+        "modal.completed_delete_video": "已經刪除完成。",
         "modal.close": "關閉",
         "quality.best": "最佳可用畫質",
         "quality.1080p": "1080p",
@@ -234,6 +247,7 @@ TRANSLATIONS = {
         "stt.player_close": "關閉",
         "stt.player_no_captions": "目前還沒有可用字幕，請先執行影片轉文字。",
         "stt.player_with_captions": "已掛載字幕，可直接在播放器中驗證。",
+        "stt.player_burned_video": "這支影片已經是燒錄字幕版，播放器不會再額外疊加字幕軌。",
         "stt.error.fetch_videos": "無法取得影片清單。",
         "stt.error.start": "無法啟動轉錄工作。",
         "stt.error.status": "無法取得轉錄狀態。",
@@ -254,9 +268,9 @@ TRANSLATIONS = {
         "burn.settings_size_minus_20": "-20%",
         "burn.settings_size_minus_10": "-10%",
         "burn.settings_size_zero": "0%",
-        "burn.settings_size_plus_10": "加大 10%",
-        "burn.settings_size_plus_20": "加大 20%",
-        "burn.settings_size_plus_30": "加大 30%",
+        "burn.settings_size_plus_10": "+10%",
+        "burn.settings_size_plus_20": "+20%",
+        "burn.settings_size_plus_30": "+30%",
         "burn.settings_font_family": "字型家族",
         "burn.settings_font_family_sans": "黑體",
         "burn.settings_font_family_serif": "明體",
@@ -300,6 +314,8 @@ TRANSLATIONS = {
         "subtitle.error.fetch": "無法讀取字幕內容。",
         "subtitle.error.save": "無法儲存字幕內容。",
         "subtitle.error.missing": "找不到這支影片的 SRT 字幕檔。",
+        "delete_video.error.not_found": "找不到要刪除的影片檔案。",
+        "delete_video.error.failed": "刪除影片失敗，請稍後再試。",
     },
     "zh-Hans": {
         "app.title": "YouTube to MP4 Downloader",
@@ -365,15 +381,21 @@ TRANSLATIONS = {
         "action.transcribed": "已转换",
         "action.retranscribe": "重新转文字",
         "action.burn_subtitles": "生成烧录 MP4",
+        "action.delete": "删除视频",
         "retranscribe.title": "重新转文字",
         "retranscribe.message": "要重新为“{title}”执行一次文字转换吗？",
         "retranscribe.confirm": "重新转换",
         "retranscribe.cancel": "取消",
+        "delete_video.title": "删除视频",
+        "delete_video.message": "确定要删除“{title}”吗？这会一起删除视频、字幕和逐字稿文件。",
+        "delete_video.confirm": "确认删除",
+        "delete_video.cancel": "取消",
         "modal.completed_title": "任务完成",
         "modal.completed_download": "已完成下载。",
         "modal.completed_download_transcribe": "已完成下载与转文字。",
         "modal.completed_burned_video": "已完成烧录字幕 MP4。",
         "modal.completed_subtitle_save": "字幕已保存。",
+        "modal.completed_delete_video": "已经删除完成。",
         "modal.close": "关闭",
         "quality.best": "最佳可用画质",
         "quality.1080p": "1080p",
@@ -423,6 +445,7 @@ TRANSLATIONS = {
         "stt.player_close": "关闭",
         "stt.player_no_captions": "目前还没有可用字幕，请先执行视频转文字。",
         "stt.player_with_captions": "已挂载字幕，可直接在播放器中验证。",
+        "stt.player_burned_video": "这支视频已经是烧录字幕版，播放器不会再额外叠加字幕轨。",
         "stt.error.fetch_videos": "无法取得视频列表。",
         "stt.error.start": "无法启动转录任务。",
         "stt.error.status": "无法取得转录状态。",
@@ -443,9 +466,9 @@ TRANSLATIONS = {
         "burn.settings_size_minus_20": "-20%",
         "burn.settings_size_minus_10": "-10%",
         "burn.settings_size_zero": "0%",
-        "burn.settings_size_plus_10": "加大 10%",
-        "burn.settings_size_plus_20": "加大 20%",
-        "burn.settings_size_plus_30": "加大 30%",
+        "burn.settings_size_plus_10": "+10%",
+        "burn.settings_size_plus_20": "+20%",
+        "burn.settings_size_plus_30": "+30%",
         "burn.settings_font_family": "字体家族",
         "burn.settings_font_family_sans": "黑体",
         "burn.settings_font_family_serif": "明体",
@@ -489,6 +512,8 @@ TRANSLATIONS = {
         "subtitle.error.fetch": "无法读取字幕内容。",
         "subtitle.error.save": "无法保存字幕内容。",
         "subtitle.error.missing": "找不到这支视频的 SRT 字幕文件。",
+        "delete_video.error.not_found": "找不到要删除的视频文件。",
+        "delete_video.error.failed": "删除视频失败，请稍后再试。",
     },
     "en": {
         "app.title": "YouTube to MP4 Downloader",
@@ -554,15 +579,21 @@ TRANSLATIONS = {
         "action.transcribed": "Converted",
         "action.retranscribe": "Retranscribe",
         "action.burn_subtitles": "Create Burned MP4",
+        "action.delete": "Delete Video",
         "retranscribe.title": "Run Transcription Again",
         "retranscribe.message": "Do you want to transcribe \"{title}\" again?",
         "retranscribe.confirm": "Transcribe Again",
         "retranscribe.cancel": "Cancel",
+        "delete_video.title": "Delete Video",
+        "delete_video.message": "Delete \"{title}\"? This will also remove the video, subtitle, and transcript files.",
+        "delete_video.confirm": "Delete",
+        "delete_video.cancel": "Cancel",
         "modal.completed_title": "Completed",
         "modal.completed_download": "Download completed.",
         "modal.completed_download_transcribe": "Download and transcription completed.",
         "modal.completed_burned_video": "Subtitle-burned MP4 completed.",
         "modal.completed_subtitle_save": "Subtitle file saved.",
+        "modal.completed_delete_video": "Deletion completed.",
         "modal.close": "Close",
         "quality.best": "Best available",
         "quality.1080p": "1080p",
@@ -612,6 +643,7 @@ TRANSLATIONS = {
         "stt.player_close": "Close",
         "stt.player_no_captions": "No captions are available yet. Run transcription first.",
         "stt.player_with_captions": "Captions are attached and ready for review.",
+        "stt.player_burned_video": "This video already has burned-in subtitles, so the player will not overlay a separate caption track.",
         "stt.error.fetch_videos": "Unable to fetch the video list.",
         "stt.error.start": "Unable to start the transcription job.",
         "stt.error.status": "Unable to fetch the transcription status.",
@@ -632,9 +664,9 @@ TRANSLATIONS = {
         "burn.settings_size_minus_20": "-20%",
         "burn.settings_size_minus_10": "-10%",
         "burn.settings_size_zero": "0%",
-        "burn.settings_size_plus_10": "Larger 10%",
-        "burn.settings_size_plus_20": "Larger 20%",
-        "burn.settings_size_plus_30": "Larger 30%",
+        "burn.settings_size_plus_10": "+10%",
+        "burn.settings_size_plus_20": "+20%",
+        "burn.settings_size_plus_30": "+30%",
         "burn.settings_font_family": "Font Family",
         "burn.settings_font_family_sans": "Sans",
         "burn.settings_font_family_serif": "Serif",
@@ -678,6 +710,8 @@ TRANSLATIONS = {
         "subtitle.error.fetch": "Unable to load subtitle content.",
         "subtitle.error.save": "Unable to save subtitle content.",
         "subtitle.error.missing": "The SRT subtitle file could not be found for this video.",
+        "delete_video.error.not_found": "The video file to delete could not be found.",
+        "delete_video.error.failed": "Failed to delete the video. Please try again later.",
     },
     "ja": {
         "app.title": "YouTube to MP4 Downloader",
@@ -743,15 +777,21 @@ TRANSLATIONS = {
         "action.transcribed": "変換済み",
         "action.retranscribe": "再文字起こし",
         "action.burn_subtitles": "字幕焼き込み MP4 を生成",
+        "action.delete": "動画を削除",
         "retranscribe.title": "文字起こしを再実行",
         "retranscribe.message": "「{title}」の文字起こしをもう一度実行しますか？",
         "retranscribe.confirm": "再変換",
         "retranscribe.cancel": "キャンセル",
+        "delete_video.title": "動画を削除",
+        "delete_video.message": "「{title}」を削除しますか？動画、字幕、文字起こしファイルも一緒に削除されます。",
+        "delete_video.confirm": "削除する",
+        "delete_video.cancel": "キャンセル",
         "modal.completed_title": "完了",
         "modal.completed_download": "ダウンロードが完了しました。",
         "modal.completed_download_transcribe": "ダウンロードと文字起こしが完了しました。",
         "modal.completed_burned_video": "字幕焼き込み MP4 の生成が完了しました。",
         "modal.completed_subtitle_save": "字幕を保存しました。",
+        "modal.completed_delete_video": "削除が完了しました。",
         "modal.close": "閉じる",
         "quality.best": "最良の画質",
         "quality.1080p": "1080p",
@@ -801,6 +841,7 @@ TRANSLATIONS = {
         "stt.player_close": "閉じる",
         "stt.player_no_captions": "利用可能な字幕はまだありません。先に文字起こしを実行してください。",
         "stt.player_with_captions": "字幕を読み込み済みです。プレイヤー上で確認できます。",
+        "stt.player_burned_video": "この動画は字幕焼き込み版のため、プレイヤーでは別の字幕トラックを重ねません。",
         "stt.error.fetch_videos": "動画一覧を取得できません。",
         "stt.error.start": "文字起こしジョブを開始できません。",
         "stt.error.status": "文字起こし状態を取得できません。",
@@ -821,9 +862,9 @@ TRANSLATIONS = {
         "burn.settings_size_minus_20": "-20%",
         "burn.settings_size_minus_10": "-10%",
         "burn.settings_size_zero": "0%",
-        "burn.settings_size_plus_10": "10% 大きく",
-        "burn.settings_size_plus_20": "20% 大きく",
-        "burn.settings_size_plus_30": "30% 大きく",
+        "burn.settings_size_plus_10": "+10%",
+        "burn.settings_size_plus_20": "+20%",
+        "burn.settings_size_plus_30": "+30%",
         "burn.settings_font_family": "フォント",
         "burn.settings_font_family_sans": "ゴシック",
         "burn.settings_font_family_serif": "明朝",
@@ -867,6 +908,8 @@ TRANSLATIONS = {
         "subtitle.error.fetch": "字幕内容を読み込めません。",
         "subtitle.error.save": "字幕内容を保存できません。",
         "subtitle.error.missing": "この動画の SRT 字幕ファイルが見つかりません。",
+        "delete_video.error.not_found": "削除対象の動画ファイルが見つかりません。",
+        "delete_video.error.failed": "動画の削除に失敗しました。しばらくしてから再試行してください。",
     },
 }
 
@@ -1018,6 +1061,41 @@ def upsert_video_index_entry(filename: str, metadata: dict[str, Any]) -> None:
     save_video_index(index)
 
 
+def remove_video_index_entry(filename: str) -> None:
+    index = load_video_index()
+    if filename not in index:
+        return
+    del index[filename]
+    save_video_index(index)
+
+
+def resolve_video_filename(filename: str) -> Path | None:
+    normalized_name = Path(filename).name
+    if normalized_name != filename or not normalized_name.lower().endswith(".mp4"):
+        return None
+
+    target_path = (DOWNLOADS_DIR / normalized_name).resolve()
+    try:
+        target_path.relative_to(DOWNLOADS_DIR)
+    except ValueError:
+        return None
+    return target_path
+
+
+def delete_video_assets(filename: str) -> bool:
+    video_path = resolve_video_filename(filename)
+    if not video_path or not video_path.is_file():
+        return False
+
+    for transcript_path in TRANSCRIPTS_DIR.glob(f"{video_path.stem}.*"):
+        if transcript_path.is_file():
+            transcript_path.unlink(missing_ok=True)
+
+    video_path.unlink()
+    remove_video_index_entry(video_path.name)
+    return True
+
+
 def create_job() -> tuple[str, dict[str, Any]]:
     job_id = uuid.uuid4().hex
     job = {
@@ -1066,6 +1144,7 @@ def list_video_files() -> list[dict[str, Any]]:
                 "title": entry.get("title") or path.stem,
                 "uploader": entry.get("uploader"),
                 "youtube_url": entry.get("webpage_url"),
+                "source_type": entry.get("source_type"),
                 "size_bytes": path.stat().st_size,
                 "media_url": f"/media/{path.name}",
                 "media_version": path.stat().st_mtime_ns,
@@ -1184,6 +1263,258 @@ def hex_to_ass_color(value: str, alpha: int = 0) -> str:
     blue = int(value[5:7], 16)
     return f"&H{alpha:02X}{blue:02X}{green:02X}{red:02X}"
 
+
+def ass_escape_text(value: str) -> str:
+    return value.replace("\\", r"\\").replace("{", r"\{").replace("}", r"\}").replace("\n", r"\N")
+
+
+def ass_escape_path(path: Path) -> str:
+    value = str(path)
+    return value.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+
+
+def srt_time_to_ass_timestamp(value: str) -> str:
+    match = re.fullmatch(r"(\d{2}):(\d{2}):(\d{2}),(\d{3})", value.strip())
+    if not match:
+        raise ValueError(f"Invalid SRT timestamp: {value}")
+    hours, minutes, seconds, milliseconds = (int(part) for part in match.groups())
+    centiseconds = int(round(milliseconds / 10))
+    if centiseconds >= 100:
+        seconds += 1
+        centiseconds -= 100
+    return f"{hours}:{minutes:02d}:{seconds:02d}.{centiseconds:02d}"
+
+
+def parse_srt_entries(content: str) -> list[dict[str, Any]]:
+    normalized = content.replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not normalized:
+        return []
+    entries: list[dict[str, Any]] = []
+    blocks = re.split(r"\n\s*\n", normalized)
+    for block in blocks:
+        lines = [line.rstrip() for line in block.split("\n")]
+        if len(lines) < 3:
+            continue
+        time_line = lines[1].strip() if "-->" in lines[1] else lines[0].strip()
+        text_lines = lines[2:] if "-->" in lines[1] else lines[1:]
+        if "-->" not in time_line:
+            continue
+        parts = re.split(r"\s*-->\s*", time_line, maxsplit=1)
+        if len(parts) != 2:
+            continue
+        start_raw, end_raw = parts
+        cleaned_lines = [line.strip() for line in text_lines if line.strip()]
+        if not cleaned_lines:
+            continue
+        entries.append(
+            {
+                "start": srt_time_to_ass_timestamp(start_raw),
+                "end": srt_time_to_ass_timestamp(end_raw),
+                "lines": cleaned_lines,
+            }
+        )
+    return entries
+
+
+@lru_cache(maxsize=8)
+def resolve_font_file(font_name: str) -> str | None:
+    try:
+        result = subprocess.run(
+            ["fc-match", "-f", "%{file}", font_name],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return None
+    candidate = result.stdout.strip()
+    return candidate if candidate and Path(candidate).is_file() else None
+
+
+def get_font_metrics(font_name: str, font_size: float) -> tuple[ImageFont.FreeTypeFont | ImageFont.ImageFont, ImageDraw.ImageDraw]:
+    font_path = resolve_font_file(font_name)
+    size = max(8, int(round(font_size)))
+    if font_path:
+        font = ImageFont.truetype(font_path, size=size)
+    else:
+        font = ImageFont.load_default()
+    image = Image.new("RGBA", (8, 8), (0, 0, 0, 0))
+    return font, ImageDraw.Draw(image)
+
+
+def measure_text_block(lines: list[str], font_name: str, font_size: float, outline_width: float, line_spacing: int) -> tuple[int, int]:
+    font, draw = get_font_metrics(font_name, font_size)
+    stroke_width = max(0, int(math.ceil(outline_width)))
+    widths: list[int] = []
+    heights: list[int] = []
+    for line in lines:
+        sample = line or " "
+        left, top, right, bottom = draw.textbbox((0, 0), sample, font=font, stroke_width=stroke_width)
+        widths.append(int(math.ceil(right - left)))
+        heights.append(int(math.ceil(bottom - top)))
+    if not widths:
+        return 0, 0
+    line_gap = max(0, line_spacing)
+    return max(widths), sum(heights) + line_gap * max(0, len(lines) - 1)
+
+
+def probe_video_dimensions(source_path: Path) -> tuple[int, int]:
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height",
+            "-of",
+            "json",
+            str(source_path),
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or "Unable to read video dimensions.")
+    payload = json.loads(result.stdout or "{}")
+    stream = (payload.get("streams") or [{}])[0]
+    width = int(stream.get("width") or 0)
+    height = int(stream.get("height") or 0)
+    if width <= 0 or height <= 0:
+        raise RuntimeError("Unable to determine video dimensions.")
+    return width, height
+
+
+def build_rounded_rectangle_path(width: int, height: int, radius: int) -> str:
+    width = max(1, int(round(width)))
+    height = max(1, int(round(height)))
+    radius = max(0, min(int(round(radius)), width // 2, height // 2))
+    if radius <= 0:
+        return f"m 0 0 l {width} 0 l {width} {height} l 0 {height} c"
+    kappa = 0.5522847498
+    control = radius * kappa
+    return " ".join(
+        [
+            f"m {radius} 0",
+            f"l {width - radius} 0",
+            f"b {width - radius + control:.2f} 0 {width:.2f} {radius - control:.2f} {width} {radius}",
+            f"l {width} {height - radius}",
+            f"b {width:.2f} {height - radius + control:.2f} {width - radius + control:.2f} {height:.2f} {width - radius} {height}",
+            f"l {radius} {height}",
+            f"b {radius - control:.2f} {height:.2f} 0 {height - radius + control:.2f} 0 {height - radius}",
+            f"l 0 {radius}",
+            f"b 0 {radius - control:.2f} {radius - control:.2f} 0 {radius} 0",
+            "c",
+        ]
+    )
+
+
+def build_ass_text_tags(parsed_settings: dict[str, Any], font_size: float) -> str:
+    shadow_value = 0.8 if parsed_settings["shadow"] else 0
+    return (
+        f"\\fn{BURN_FONT_FAMILIES[parsed_settings['font_family']]}"
+        f"\\fs{font_size:.1f}"
+        "\\b1"
+        f"\\1c{hex_to_ass_color(parsed_settings['text_color'])}"
+        f"\\3c{hex_to_ass_color(parsed_settings['outline_color'])}"
+        f"\\bord{parsed_settings['outline_width']}"
+        f"\\shad{shadow_value}"
+    )
+
+
+def build_advanced_ass_content(subtitle_content: str, parsed_settings: dict[str, Any], video_width: int, video_height: int) -> str:
+    entries = parse_srt_entries(subtitle_content)
+    font_size = round(BURN_BASE_FONT_SIZE * BURN_FONT_SIZE_OPTIONS[parsed_settings["size"]], 1)
+    font_name = BURN_FONT_FAMILIES[parsed_settings["font_family"]]
+    horizontal_padding = (
+        int(round(parsed_settings["background_size"] * BURN_BACKGROUND_HORIZONTAL_PADDING_FACTOR))
+        if parsed_settings["background"]
+        else 0
+    )
+    vertical_padding = (
+        max(
+            BURN_BACKGROUND_MIN_VERTICAL_PADDING,
+            int(round(parsed_settings["background_size"] * BURN_BACKGROUND_VERTICAL_PADDING_FACTOR)),
+        )
+        if parsed_settings["background"]
+        else 0
+    )
+    text_tags = build_ass_text_tags(parsed_settings, font_size)
+    background_alpha = int(round(255 * (100 - parsed_settings["background_opacity"]) / 100))
+    events: list[str] = []
+
+    for entry in entries:
+        line_width, text_height = measure_text_block(
+            entry["lines"],
+            font_name,
+            font_size,
+            parsed_settings["outline_width"],
+            parsed_settings["line_spacing"],
+        )
+        scaled_line_width = max(1, int(round(line_width * BURN_BACKGROUND_WIDTH_SCALE)))
+        box_width = scaled_line_width + horizontal_padding * 2
+        box_height = text_height + vertical_padding * 2
+        centered_x = int(round((video_width - box_width) / 2))
+        box_x = max(parsed_settings["margin_l"], min(centered_x, video_width - parsed_settings["margin_r"] - box_width))
+        if parsed_settings["position"] == "top":
+            box_y = parsed_settings["margin_v"]
+        elif parsed_settings["position"] == "middle":
+            box_y = int(round((video_height - box_height) / 2))
+        else:
+            box_y = video_height - parsed_settings["margin_v"] - box_height
+        box_x = max(0, box_x)
+        box_y = max(0, box_y)
+
+        if parsed_settings["background"]:
+            path = build_rounded_rectangle_path(box_width, box_height, parsed_settings["background_radius"])
+            background_tags = (
+                f"{{\\an7\\pos({box_x},{box_y})\\p1\\bord0\\shad0"
+                f"\\1c{hex_to_ass_color(parsed_settings['background_color'])}"
+                f"\\1a&H{background_alpha:02X}&}}{path}{{\\p0}}"
+            )
+            events.append(
+                f"Dialogue: 0,{entry['start']},{entry['end']},Default,,0,0,0,,{background_tags}"
+            )
+
+        line_y = box_y + vertical_padding
+        text_x = box_x + int(round(box_width / 2))
+        for line in entry["lines"]:
+            text = ass_escape_text(line)
+            events.append(
+                f"Dialogue: 1,{entry['start']},{entry['end']},Default,,0,0,0,,"
+                f"{{\\an8\\pos({text_x},{line_y}){text_tags}}}{text}"
+            )
+            _, rendered_height = measure_text_block(
+                [line],
+                font_name,
+                font_size,
+                parsed_settings["outline_width"],
+                0,
+            )
+            line_y += rendered_height + parsed_settings["line_spacing"]
+
+    script_lines = [
+        "[Script Info]",
+        "ScriptType: v4.00+",
+        f"PlayResX: {video_width}",
+        f"PlayResY: {video_height}",
+        "WrapStyle: 2",
+        "ScaledBorderAndShadow: yes",
+        "",
+        "[V4+ Styles]",
+        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+        "Style: Default,Arial,24,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,2,0,0,0,1",
+        "",
+        "[Events]",
+        "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+        *events,
+        "",
+    ]
+    return "\n".join(script_lines)
 
 def wrap_subtitle_text(text: str, max_chars_per_line: int) -> str:
     if max_chars_per_line <= 0:
@@ -1325,13 +1656,14 @@ def srt_to_vtt_content(content: str) -> str:
 
 
 def escape_ffmpeg_subtitle_path(path: Path) -> str:
-    value = str(path)
-    return value.replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+    return ass_escape_path(path)
 
 
 def build_subtitle_filter(subtitle_path: Path, settings: dict[str, Any] | None = None) -> str:
     parsed_settings = parse_burn_settings(settings)
     escaped_path = escape_ffmpeg_subtitle_path(subtitle_path)
+    if subtitle_path.suffix.lower() == ".ass":
+        return f"subtitles='{escaped_path}'"
     font_size = round(BURN_BASE_FONT_SIZE * BURN_FONT_SIZE_OPTIONS[parsed_settings["size"]], 1)
     alignment = BURN_POSITION_OPTIONS[parsed_settings["position"]]
     background_alpha = int(round(255 * (100 - parsed_settings["background_opacity"]) / 100))
@@ -1459,6 +1791,7 @@ def run_burned_video_job(job_id: str, filename: str, settings: dict[str, Any] | 
     subtitle_path = TRANSCRIPTS_DIR / f"{source_path.stem}.srt"
     parsed_settings = parse_burn_settings(settings)
     prepared_subtitle_path = subtitle_path
+    prepared_filter_path = subtitle_path
     temp_dir: Path | None = None
 
     if not source_path.is_file():
@@ -1499,20 +1832,34 @@ def run_burned_video_job(job_id: str, filename: str, settings: dict[str, Any] | 
 
     target_filename = build_burned_video_filename(source_path)
     target_path = DOWNLOADS_DIR / target_filename
-    if parsed_settings["max_chars_per_line"] > 0:
+    if parsed_settings["max_chars_per_line"] > 0 or parsed_settings["background"]:
         temp_dir = Path(tempfile.mkdtemp(prefix="youtube-to-mp4-burn-"))
+    if parsed_settings["max_chars_per_line"] > 0 and temp_dir:
         prepared_subtitle_path = temp_dir / subtitle_path.name
         prepared_subtitle_path.write_text(
             build_wrapped_srt_content(subtitle_path.read_text(encoding="utf-8"), parsed_settings["max_chars_per_line"]),
             encoding="utf-8",
         )
+    if temp_dir:
+        video_width, video_height = probe_video_dimensions(source_path)
+        ass_path = temp_dir / f"{subtitle_path.stem}.ass"
+        ass_path.write_text(
+            build_advanced_ass_content(
+                prepared_subtitle_path.read_text(encoding="utf-8"),
+                parsed_settings,
+                video_width,
+                video_height,
+            ),
+            encoding="utf-8",
+        )
+        prepared_filter_path = ass_path
     command = [
         "ffmpeg",
         "-y",
         "-i",
         str(source_path),
         "-vf",
-        build_subtitle_filter(prepared_subtitle_path, parsed_settings),
+        build_subtitle_filter(prepared_filter_path, parsed_settings),
         "-c:a",
         "copy",
         str(target_path),
@@ -1762,6 +2109,38 @@ def build_api_spec() -> dict[str, Any]:
                                 }
                             },
                         }
+                    },
+                }
+            },
+            "/api/v1/videos/{filename}": {
+                "delete": {
+                    "tags": ["Videos"],
+                    "summary": "Delete a downloaded video and its transcript files",
+                    "parameters": [
+                        {
+                            "in": "path",
+                            "name": "filename",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Video, transcript files, and index entry deleted.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/DeleteVideoResponse"}
+                                }
+                            },
+                        },
+                        "404": {
+                            "description": "Video file not found.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                }
+                            },
+                        },
                     },
                 }
             },
@@ -2059,6 +2438,7 @@ def build_api_spec() -> dict[str, Any]:
                         "title": {"type": "string"},
                         "uploader": {"type": "string", "nullable": True},
                         "youtube_url": {"type": "string", "nullable": True},
+                        "source_type": {"type": "string", "nullable": True},
                         "size_bytes": {"type": "integer"},
                         "media_url": {"type": "string"},
                         "download_url": {"type": "string"},
@@ -2085,6 +2465,14 @@ def build_api_spec() -> dict[str, Any]:
                         }
                     },
                     "required": ["videos"],
+                },
+                "DeleteVideoResponse": {
+                    "type": "object",
+                    "properties": {
+                        "deleted": {"type": "boolean"},
+                        "filename": {"type": "string"},
+                    },
+                    "required": ["deleted", "filename"],
                 },
                 "CreateTranscriptionRequest": {
                     "type": "object",
@@ -2258,6 +2646,20 @@ def job_status(job_id: str):
 @app.get("/api/videos")
 def videos():
     return jsonify({"videos": list_video_files()})
+
+
+@app.delete("/api/v1/videos/<path:filename>")
+@app.delete("/api/videos/<path:filename>")
+def delete_video(filename: str):
+    try:
+        deleted = delete_video_assets(filename)
+    except OSError:
+        return jsonify({"error": "Failed to delete video.", "error_key": "delete_video.error.failed"}), 500
+
+    if not deleted:
+        return jsonify({"error": "Video file not found.", "error_key": "delete_video.error.not_found"}), 404
+
+    return jsonify({"deleted": True, "filename": Path(filename).name})
 
 
 @app.post("/api/v1/uploads")

@@ -11,7 +11,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg nodejs npm fonts-noto-cjk fontconfig \
+    && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        nodejs \
+        npm \
+        fonts-noto-cjk \
+        fontconfig \
+        build-essential \
+        zlib1g-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
     && fc-cache -f \
     && rm -rf /var/lib/apt/lists/*
 

@@ -123,6 +123,41 @@ def cmd_transcribe(args: argparse.Namespace) -> int:
     return 1 if status in {"error", "failed"} else 0
 
 
+def cmd_burn(args: argparse.Namespace) -> int:
+    style = {
+        "size": args.size,
+        "font_family": args.font_family,
+        "text_color": args.text_color,
+        "outline_color": args.outline_color,
+        "outline_width": args.outline_width,
+        "position": args.position,
+        "line_spacing": args.line_spacing,
+        "margin_v": args.margin_v,
+        "margin_l": args.margin_l,
+        "margin_r": args.margin_r,
+        "shadow": args.shadow,
+        "background": args.background,
+        "background_color": args.background_color,
+        "background_opacity": args.background_opacity,
+        "background_size": args.background_size,
+        "background_radius": args.background_radius,
+        "max_chars_per_line": args.max_chars_per_line,
+    }
+    payload = api_request(
+        args.base_url,
+        "/api/v1/burned-videos",
+        method="POST",
+        payload={"filename": args.filename, "style": style},
+    )
+
+    job_id = payload.get("job_id")
+    if args.wait and job_id:
+        payload = wait_for_download(args.base_url, job_id, args.interval, args.timeout)
+
+    print_payload(payload, args.json)
+    return 1 if str(payload.get("status", "")).lower() == "error" else 0
+
+
 def cmd_download(args: argparse.Namespace) -> int:
     payload = api_request(
         args.base_url,
@@ -204,6 +239,30 @@ def build_parser() -> argparse.ArgumentParser:
     transcribe_parser.add_argument("--interval", type=float, default=2.0, help="Polling interval in seconds")
     transcribe_parser.add_argument("--timeout", type=float, default=1200.0, help="Wait timeout in seconds, 0 disables timeout")
     transcribe_parser.set_defaults(func=cmd_transcribe)
+
+    burn_parser = subparsers.add_parser("burn", help="Create a subtitle-burned MP4 with style settings")
+    burn_parser.add_argument("filename", help="Source MP4 filename")
+    burn_parser.add_argument("--size", default="zero", choices=["minus_20", "minus_10", "zero", "plus_10", "plus_20", "plus_30"])
+    burn_parser.add_argument("--font-family", default="sans", choices=["sans", "serif", "mono"])
+    burn_parser.add_argument("--text-color", default="#ffffff", help="Subtitle text color, e.g. #ffffff")
+    burn_parser.add_argument("--outline-color", default="#000000", help="Subtitle outline color, e.g. #000000")
+    burn_parser.add_argument("--outline-width", type=float, default=0.8, help="Outline width")
+    burn_parser.add_argument("--position", default="bottom", choices=["bottom", "middle", "top"])
+    burn_parser.add_argument("--line-spacing", type=int, default=0, help="Line spacing")
+    burn_parser.add_argument("--margin-v", type=int, default=34, help="Vertical margin")
+    burn_parser.add_argument("--margin-l", type=int, default=42, help="Left safe margin")
+    burn_parser.add_argument("--margin-r", type=int, default=42, help="Right safe margin")
+    burn_parser.add_argument("--shadow", action="store_true", help="Enable subtitle shadow")
+    burn_parser.add_argument("--background", action="store_true", help="Enable subtitle background")
+    burn_parser.add_argument("--background-color", default="#000000", help="Background color, e.g. #000000")
+    burn_parser.add_argument("--background-opacity", type=int, default=56, help="Background opacity 0-100")
+    burn_parser.add_argument("--background-size", type=int, default=32, help="Background size")
+    burn_parser.add_argument("--background-radius", type=int, default=22, help="Background corner radius")
+    burn_parser.add_argument("--max-chars-per-line", type=int, default=18, help="Maximum characters per line")
+    burn_parser.add_argument("--wait", action="store_true", help="Wait until the burn job finishes")
+    burn_parser.add_argument("--interval", type=float, default=2.0, help="Polling interval in seconds")
+    burn_parser.add_argument("--timeout", type=float, default=1200.0, help="Wait timeout in seconds, 0 disables timeout")
+    burn_parser.set_defaults(func=cmd_burn)
 
     return parser
 

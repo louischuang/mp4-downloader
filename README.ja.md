@@ -29,6 +29,7 @@
 - `txt`、`srt`、`vtt`、`json` の文字起こし出力を生成
 - 生成された `srt` 字幕をブラウザ上で直接編集可能
 - 動画一覧のツールバーから字幕焼き込み済みの新しい MP4 を生成可能
+- 焼き込み字幕のフォント、サイズ、文字色、縁取り、行間、マージン、半透明背景を細かく調整可能
 - `ffmpeg` が利用可能な場合は MP4 に結合して出力
 - 右上のボタン列から UI 言語を切り替え可能
 - ダウンロード動画、字幕、モデルキャッシュをコンテナ外に永続保存可能
@@ -153,6 +154,16 @@ Docker では以下にマウントされます。
 - `GET /api/v1/subtitles/{filename}`
 - `PUT /api/v1/subtitles/{filename}`
 
+`POST /api/v1/burned-videos` には `style` オブジェクトを渡せて、字幕の文字設定を細かく指定できます。
+
+- `size`、`font_family`
+- `text_color`、`outline_color`、`outline_width`
+- `position`、`line_spacing`
+- `margin_v`、`margin_l`、`margin_r`
+- `shadow`
+- `background`、`background_color`、`background_opacity`、`background_size`、`background_radius`
+- `max_chars_per_line`
+
 関連ドキュメント：
 
 - Swagger UI：`/api/docs`
@@ -169,6 +180,7 @@ python3 cli.py capabilities --json
 python3 cli.py videos --json
 python3 cli.py download "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --wait --json
 python3 cli.py transcribe "example-video.mp4" --wait --json
+python3 cli.py burn "example-video.mp4" --wait --size plus_20 --font-family sans --text-color "#ffffff" --outline-color "#000000" --background --background-color "#000000" --background-opacity 48 --background-size 24 --background-radius 18
 ```
 
 ## E2E テストスクリプト

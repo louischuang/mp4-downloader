@@ -43,6 +43,9 @@
         <path d="M4.5 19.5h3.2l8.9-8.9-3.2-3.2-8.9 8.9v3.2Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
         <path d="m12.7 7.3 3.2 3.2M14.6 5.4l1.7-1.7a1.6 1.6 0 0 1 2.3 0l1.7 1.7a1.6 1.6 0 0 1 0 2.3l-1.7 1.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
       </symbol>
+      <symbol id="icon-delete" viewBox="0 0 24 24">
+        <path d="M5.5 7.5h13M9.5 4.5h5M9 10v6.5M12 10v6.5M15 10v6.5M7.5 7.5l.7 10a1.5 1.5 0 0 0 1.5 1.4h4.6a1.5 1.5 0 0 0 1.5-1.4l.7-10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+      </symbol>
     </svg>
     <main class="shell">
       <div class="topbar">
@@ -252,6 +255,24 @@
           </div>
           <div class="confirm-actions">
             <button type="button" id="retranscribe-confirm" data-i18n="retranscribe.confirm">{{ translations['zh-Hant']['retranscribe.confirm'] }}</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="status-modal hidden" id="delete-video-modal" aria-hidden="true">
+        <div class="status-dialog">
+          <div class="status-dialog-head">
+            <div>
+              <h2 class="section-title" data-i18n="delete_video.title">{{ translations['zh-Hant']['delete_video.title'] }}</h2>
+              <p class="section-intro" id="delete-video-message">{{ translations['zh-Hant']['delete_video.message'] }}</p>
+            </div>
+            <button type="button" class="modal-close-button" id="delete-video-cancel" aria-label="{{ translations['zh-Hant']['delete_video.cancel'] }}" title="{{ translations['zh-Hant']['delete_video.cancel'] }}">
+              <svg class="action-icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+            </button>
+          </div>
+          <div class="confirm-actions">
+            <button type="button" class="secondary-button" id="delete-video-close-action" data-i18n="delete_video.cancel">{{ translations['zh-Hant']['delete_video.cancel'] }}</button>
+            <button type="button" id="delete-video-confirm" data-i18n="delete_video.confirm">{{ translations['zh-Hant']['delete_video.confirm'] }}</button>
           </div>
         </div>
       </section>
@@ -470,6 +491,11 @@
       const retranscribeMessage = document.getElementById("retranscribe-message");
       const retranscribeCancel = document.getElementById("retranscribe-cancel");
       const retranscribeConfirm = document.getElementById("retranscribe-confirm");
+      const deleteVideoModal = document.getElementById("delete-video-modal");
+      const deleteVideoMessage = document.getElementById("delete-video-message");
+      const deleteVideoCancel = document.getElementById("delete-video-cancel");
+      const deleteVideoCloseAction = document.getElementById("delete-video-close-action");
+      const deleteVideoConfirm = document.getElementById("delete-video-confirm");
       const subtitleEditorModal = document.getElementById("subtitle-editor-modal");
       const subtitleEditorIntro = document.getElementById("subtitle-editor-intro");
       const subtitleEditorClose = document.getElementById("subtitle-editor-close");
@@ -525,6 +551,7 @@
       let currentCompletionMessageKey = null;
       let currentDownloadVideo = null;
       let currentRetranscribeVideo = null;
+      let currentDeleteVideo = null;
       let currentSubtitleEditorVideo = null;
       let currentBurnSettingsVideo = null;
       const burnProfilesStorageKey = "ytmp4_burn_profiles";
@@ -609,6 +636,8 @@
         downloadModalClose.setAttribute("title", t("download.modal_close"));
         retranscribeCancel.setAttribute("aria-label", t("retranscribe.cancel"));
         retranscribeCancel.setAttribute("title", t("retranscribe.cancel"));
+        deleteVideoCancel.setAttribute("aria-label", t("delete_video.cancel"));
+        deleteVideoCancel.setAttribute("title", t("delete_video.cancel"));
         subtitleEditorClose.setAttribute("aria-label", t("subtitle.editor_cancel"));
         subtitleEditorClose.setAttribute("title", t("subtitle.editor_cancel"));
         burnSettingsClose.setAttribute("aria-label", t("burn.settings_cancel"));
@@ -618,6 +647,9 @@
         }
         if (currentRetranscribeVideo) {
           retranscribeMessage.textContent = tFormat("retranscribe.message", { title: currentRetranscribeVideo.title });
+        }
+        if (currentDeleteVideo) {
+          deleteVideoMessage.textContent = tFormat("delete_video.message", { title: currentDeleteVideo.title });
         }
         if (currentSubtitleEditorVideo) {
           subtitleEditorIntro.textContent = `${t("subtitle.editor_intro")} ${currentSubtitleEditorVideo.title}`;
@@ -737,6 +769,19 @@
         currentRetranscribeVideo = null;
         retranscribeModal.classList.add("hidden");
         retranscribeModal.setAttribute("aria-hidden", "true");
+      }
+
+      function openDeleteVideoModal(video) {
+        currentDeleteVideo = video;
+        deleteVideoMessage.textContent = tFormat("delete_video.message", { title: video.title });
+        deleteVideoModal.classList.remove("hidden");
+        deleteVideoModal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeDeleteVideoModal() {
+        currentDeleteVideo = null;
+        deleteVideoModal.classList.add("hidden");
+        deleteVideoModal.setAttribute("aria-hidden", "true");
       }
 
       function showSubtitleEditorError(message) {
@@ -902,7 +947,7 @@
           ? `${burnSettingsBackgroundColor.value}${Math.round((Number(burnSettingsBackgroundOpacity.value) || 0) * 2.55).toString(16).padStart(2, "0")}`
           : "transparent";
         burnPreviewCaption.style.padding = burnSettingsBackground.checked
-          ? `${Math.max(10, Math.round((Number(burnSettingsBackgroundSize.value) || 32) * 0.44))}px ${Number(burnSettingsBackgroundSize.value) || 32}px`
+          ? `${Math.max(10, Math.round((Number(burnSettingsBackgroundSize.value) || 32) * 0.44))}px ${Math.round((Number(burnSettingsBackgroundSize.value) || 32) * 0.25)}px`
           : "0";
         burnPreviewCaption.style.borderRadius = burnSettingsBackground.checked
           ? `${Number(burnSettingsBackgroundRadius.value) || 22}px`
@@ -1056,7 +1101,9 @@
         playerVideo.removeAttribute("src");
         resetPlayerTrack();
         playerVideo.src = buildVersionedUrl(video.media_url, video.media_version);
-        if (video.captions_url) {
+        if (video.source_type === "burned_subtitles") {
+          playerCaptionStatus.textContent = t("stt.player_burned_video");
+        } else if (video.captions_url) {
           playerTrack.src = buildVersionedUrl(video.captions_url, video.captions_version);
           playerTrack.mode = "showing";
           playerCaptionStatus.textContent = t("stt.player_with_captions");
@@ -1383,6 +1430,31 @@
         }
       }
 
+      async function deleteCurrentVideo() {
+        if (!currentDeleteVideo) {
+          return;
+        }
+
+        const targetVideo = currentDeleteVideo;
+        hideTranscriptError();
+
+        try {
+          const response = await fetch(`/api/videos/${encodeURIComponent(targetVideo.filename)}`, {
+            method: "DELETE",
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(localizeError(data));
+          }
+
+          closeDeleteVideoModal();
+          openCompletionModal("modal.completed_delete_video");
+          await loadVideos();
+        } catch (error) {
+          showTranscriptError(error.message || t("delete_video.error.failed"));
+        }
+      }
+
       function renderVideoList(videos) {
         videoList.innerHTML = "";
         if (!videos.length) {
@@ -1479,6 +1551,12 @@
             });
             actions.appendChild(button);
           }
+
+          const deleteButton = createIconButton("delete", t("action.delete"));
+          deleteButton.addEventListener("click", () => {
+            openDeleteVideoModal(video);
+          });
+          actions.appendChild(deleteButton);
 
           footer.appendChild(actions);
           meta.appendChild(footer);
@@ -1728,6 +1806,8 @@
       completionClose.addEventListener("click", closeCompletionModal);
       downloadModalClose.addEventListener("click", closeDownloadModal);
       retranscribeCancel.addEventListener("click", closeRetranscribeModal);
+      deleteVideoCancel.addEventListener("click", closeDeleteVideoModal);
+      deleteVideoCloseAction.addEventListener("click", closeDeleteVideoModal);
       subtitleEditorClose.addEventListener("click", closeSubtitleEditorModal);
       subtitleEditorCancel.addEventListener("click", closeSubtitleEditorModal);
       subtitleEditorSave.addEventListener("click", saveSubtitleEditor);
@@ -1813,6 +1893,7 @@
         closeRetranscribeModal();
         await startTranscription(targetVideo);
       });
+      deleteVideoConfirm.addEventListener("click", deleteCurrentVideo);
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && !playerModal.classList.contains("hidden")) {
           closePlayerModal();
@@ -1825,6 +1906,9 @@
         }
         if (event.key === "Escape" && !retranscribeModal.classList.contains("hidden")) {
           closeRetranscribeModal();
+        }
+        if (event.key === "Escape" && !deleteVideoModal.classList.contains("hidden")) {
+          closeDeleteVideoModal();
         }
         if (event.key === "Escape" && !subtitleEditorModal.classList.contains("hidden")) {
           closeSubtitleEditorModal();

@@ -28,6 +28,7 @@
 - 支援本機 `faster-whisper` 轉文字，輸出 `txt`、`srt`、`vtt`、`json`
 - 可直接在瀏覽器中編輯產生出的 `srt` 字幕
 - 可從影片列表工具列產生燒錄字幕的新 MP4
+- 可自訂燒錄字幕的字型、字級、字色、外框、行距、邊距與透明背景樣式
 - 轉文字進度會顯示在各自影片列內，不與下載進度共用
 - 最新加入的影片會在標題前顯示紅色 `NEW` 標記
 - 安裝 `ffmpeg` 時可輸出合併後的 MP4
@@ -148,6 +149,16 @@ Docker 會將這個檔案掛載到：
 - `GET /api/v1/subtitles/{filename}`
 - `PUT /api/v1/subtitles/{filename}`
 
+`POST /api/v1/burned-videos` 可帶入 `style` 物件，自訂燒錄字幕字體設定，包含：
+
+- `size`、`font_family`
+- `text_color`、`outline_color`、`outline_width`
+- `position`、`line_spacing`
+- `margin_v`、`margin_l`、`margin_r`
+- `shadow`
+- `background`、`background_color`、`background_opacity`、`background_size`、`background_radius`
+- `max_chars_per_line`
+
 相關文件：
 
 - Swagger UI：`/api/docs`
@@ -164,6 +175,7 @@ python3 cli.py capabilities --json
 python3 cli.py videos --json
 python3 cli.py download "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --wait --json
 python3 cli.py transcribe "example-video.mp4" --wait --json
+python3 cli.py burn "example-video.mp4" --wait --size plus_20 --font-family sans --text-color "#ffffff" --outline-color "#000000" --background --background-color "#000000" --background-opacity 48 --background-size 24 --background-radius 18
 ```
 
 ## 端對端測試腳本

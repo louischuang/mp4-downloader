@@ -29,6 +29,7 @@ A local web app and agent-friendly API for downloading YouTube videos, convertin
 - Generate `txt`, `srt`, `vtt`, and `json` transcript outputs
 - Edit generated `srt` subtitles directly in the browser
 - Generate a new MP4 with burned-in subtitles from the video list toolbar
+- Customize burned subtitle font family, size, colors, outline, spacing, margins, and background styling
 - Switch UI language from the top-right button bar
 - Persist downloaded files, transcripts, and model cache outside the container
 - Support YouTube cookies for sign-in / anti-bot verification flows
@@ -152,6 +153,16 @@ The project includes an agent-friendly HTTP API:
 - `GET /api/v1/subtitles/{filename}`
 - `PUT /api/v1/subtitles/{filename}`
 
+`POST /api/v1/burned-videos` accepts a `style` object for burned subtitle font settings, including:
+
+- `size`, `font_family`
+- `text_color`, `outline_color`, `outline_width`
+- `position`, `line_spacing`
+- `margin_v`, `margin_l`, `margin_r`
+- `shadow`
+- `background`, `background_color`, `background_opacity`, `background_size`, `background_radius`
+- `max_chars_per_line`
+
 Related docs:
 
 - Swagger UI: `/api/docs`
@@ -168,6 +179,7 @@ python3 cli.py capabilities --json
 python3 cli.py videos --json
 python3 cli.py download "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --wait --json
 python3 cli.py transcribe "example-video.mp4" --wait --json
+python3 cli.py burn "example-video.mp4" --wait --size plus_20 --font-family sans --text-color "#ffffff" --outline-color "#000000" --background --background-color "#000000" --background-opacity 48 --background-size 24 --background-radius 18
 ```
 
 ## End-to-End Test Script

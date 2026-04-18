@@ -92,9 +92,44 @@ Request:
 
 ```json
 {
-  "filename": "example-video.mp4"
+  "filename": "example-video.mp4",
+  "style": {
+    "size": "plus_20",
+    "font_family": "sans",
+    "text_color": "#ffffff",
+    "outline_color": "#000000",
+    "outline_width": 1.2,
+    "position": "bottom",
+    "line_spacing": 2,
+    "margin_v": 34,
+    "margin_l": 42,
+    "margin_r": 42,
+    "shadow": false,
+    "background": true,
+    "background_color": "#000000",
+    "background_opacity": 48,
+    "background_size": 24,
+    "background_radius": 18,
+    "max_chars_per_line": 18
+  }
 }
 ```
+
+Supported `style` fields:
+
+- `size`: `minus_20`, `minus_10`, `zero`, `plus_10`, `plus_20`, `plus_30`
+- `font_family`: `sans`, `serif`, `mono`
+- `text_color`, `outline_color`, `background_color`: hex colors like `#ffffff`
+- `outline_width`
+- `position`: `bottom`, `middle`, `top`
+- `line_spacing`
+- `margin_v`, `margin_l`, `margin_r`
+- `shadow`
+- `background`
+- `background_opacity`
+- `background_size`
+- `background_radius`
+- `max_chars_per_line`
 
 Response includes:
 
@@ -156,6 +191,7 @@ python cli.py videos --json
 python cli.py download "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --quality 720p --wait
 python cli.py download "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --wait --transcribe --model small --json
 python cli.py transcribe "example-video.mp4" --wait --json
+python cli.py burn "example-video.mp4" --wait --size plus_20 --font-family sans --text-color "#ffffff" --outline-color "#000000" --background --background-color "#000000" --background-opacity 48 --background-size 24 --background-radius 18
 python cli.py job <download-job-id> --json
 python cli.py transcription-status <transcription-job-id> --json
 ```
