@@ -24,6 +24,7 @@ from werkzeug.utils import secure_filename
 
 
 BASE_DIR = Path(__file__).resolve().parent
+PACKAGE_JSON_PATH = BASE_DIR / "package.json"
 DOWNLOADS_DIR = Path(os.getenv("DOWNLOADS_DIR", str(BASE_DIR / "downloads"))).resolve()
 DOWNLOADS_DIR.mkdir(exist_ok=True)
 TRANSCRIPTS_DIR = Path(os.getenv("TRANSCRIPTS_DIR", str(BASE_DIR / "transcripts"))).resolve()
@@ -36,7 +37,20 @@ YTDLP_COOKIES_FILE = os.getenv("YTDLP_COOKIES_FILE", "").strip()
 YTDLP_REMOTE_COMPONENTS = os.getenv("YTDLP_REMOTE_COMPONENTS", "ejs:github").strip()
 STT_API_URL = os.getenv("STT_API_URL", "http://stt-service:8000").rstrip("/")
 STT_DEFAULT_MODEL = os.getenv("STT_DEFAULT_MODEL", "small").strip() or "small"
-API_VERSION = "1.0.0"
+
+
+def load_app_version() -> str:
+    if not PACKAGE_JSON_PATH.is_file():
+        return "1.0.0"
+    try:
+        payload = json.loads(PACKAGE_JSON_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return "1.0.0"
+    version = str(payload.get("version", "")).strip()
+    return version or "1.0.0"
+
+
+API_VERSION = load_app_version()
 BURN_BASE_FONT_SIZE = 50.0
 BURN_FONT_SIZE_OPTIONS = {
     "minus_20": 0.8,
@@ -2585,6 +2599,7 @@ def index():
         quality_options=QUALITY_OPTIONS,
         transcription_models=TRANSCRIPTION_MODELS,
         translations=TRANSLATIONS,
+        app_version=API_VERSION,
     )
 
 
@@ -2605,7 +2620,7 @@ def openapi_spec():
 
 @app.get("/api/docs")
 def api_docs():
-    return render_template("swagger.html", openapi_url="/api/openapi.json")
+    return render_template("swagger.html", openapi_url="/api/openapi.json", app_version=API_VERSION)
 
 
 @app.post("/api/v1/downloads")

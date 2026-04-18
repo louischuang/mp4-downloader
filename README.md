@@ -12,6 +12,8 @@ Quick links:
 - [License](LICENSE)
 - [App Preview](assets/app-preview.svg)
 - [Agent API & CLI Guide](docs/AGENT_API.md)
+- [Tool Usage Guide](docs/TOOL_USAGE.md)
+- [CLI Guide](docs/CLI_GUIDE.md)
 
 ## Agent Integration
 

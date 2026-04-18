@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>YouTube to MP4 Agent API Docs</title>
+    <title>YouTube to MP4 Agent API Docs v{{ app_version }}</title>
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
     <style>
       html {
@@ -21,9 +21,18 @@
         margin: 0;
         background: #f5f7fb;
       }
+
+      .swagger-topbar {
+        padding: 14px 20px;
+        font-family: Arial, sans-serif;
+        color: #eaf2ff;
+        background: linear-gradient(135deg, #0b1526 0%, #132640 100%);
+        text-align: center;
+      }
     </style>
   </head>
   <body>
+    <div class="swagger-topbar">YouTube to MP4 Agent API Docs v{{ app_version }}</div>
     <div id="swagger-ui"></div>
     <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
     <script>

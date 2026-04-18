@@ -164,6 +164,8 @@ Docker 會將這個檔案掛載到：
 - Swagger UI：`/api/docs`
 - OpenAPI JSON：`/api/openapi.json`
 - 詳細說明：[docs/AGENT_API.md](docs/AGENT_API.md)
+- 工具使用說明：[docs/TOOL_USAGE.md](docs/TOOL_USAGE.md)
+- CLI 使用說明：[docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
 
 ## CLI
 

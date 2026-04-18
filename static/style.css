@@ -70,9 +70,18 @@ body::after {
 .shell {
   width: min(960px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 64px 0;
+  padding: 64px 0 36px;
   position: relative;
   z-index: 1;
+}
+
+.app-footer {
+  margin-top: 28px;
+  text-align: center;
+  color: rgba(154, 176, 202, 0.78);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
 }
 
 .topbar {

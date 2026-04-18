@@ -168,6 +168,8 @@ Related docs:
 - Swagger UI: `/api/docs`
 - OpenAPI JSON: `/api/openapi.json`
 - Detailed guide: [docs/AGENT_API.md](docs/AGENT_API.md)
+- Tool usage guide: [docs/TOOL_USAGE.md](docs/TOOL_USAGE.md)
+- CLI guide: [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
 
 ## CLI
 

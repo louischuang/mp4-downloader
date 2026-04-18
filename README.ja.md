@@ -169,6 +169,8 @@ Docker では以下にマウントされます。
 - Swagger UI：`/api/docs`
 - OpenAPI JSON：`/api/openapi.json`
 - 詳細ガイド：[docs/AGENT_API.md](docs/AGENT_API.md)
+- ツール利用ガイド：[docs/TOOL_USAGE.md](docs/TOOL_USAGE.md)
+- CLI ガイド：[docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
 
 ## CLI
 

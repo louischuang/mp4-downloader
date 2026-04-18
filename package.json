@@ -1,0 +1,7 @@
+{
+  "name": "youtube-to-mp4-downloader",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local YouTube to MP4 downloader with transcription, burned subtitles, API, and CLI.",
+  "license": "MIT"
+}
