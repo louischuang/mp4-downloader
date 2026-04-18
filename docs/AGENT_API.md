@@ -1,6 +1,6 @@
 # Agent API and CLI Guide
 
-This project now exposes an agent-friendly HTTP API and a CLI wrapper for other platforms, scripts, and AI agents.
+This project now exposes an agent-friendly HTTP API and a CLI wrapper for other platforms, scripts, and AI agents. Transcription jobs can target a dedicated local STT container or a remote Whisper service that accepts uploaded MP4 files and returns transcript artifacts.
 
 ## Swagger / OpenAPI
 
@@ -83,6 +83,8 @@ Response includes:
 - `title`
 - `transcription_job_id`
 - `video` metadata snapshot
+
+The web app stores the uploaded MP4 locally, uploads the same MP4 to the STT service, and later pulls transcript artifacts back into local `transcripts`.
 
 ### `POST /api/v1/burned-videos`
 
@@ -167,6 +169,8 @@ Response includes:
 
 ### `POST /api/v1/transcriptions`
 
+Starts a transcription job for an MP4 already stored by the web app. The web app uploads that MP4 to the STT service instead of relying on shared storage.
+
 Request:
 
 ```json
@@ -178,7 +182,7 @@ Request:
 
 ### `GET /api/v1/transcriptions/{job_id}`
 
-Returns STT job status and generated transcript download URLs when available.
+Returns STT job status and generated transcript download URLs when available. When the remote STT job is `completed`, the web app pulls transcript artifacts back and saves them locally before serving transcript download URLs.
 
 ## CLI
 
@@ -226,6 +230,15 @@ What it validates:
 - `GET /api/v1/transcriptions/{job_id}` until completion
 - MP4 download
 - `txt`, `srt`, `vtt`, `json` transcript downloads
+
+## Remote STT Notes
+
+- Configure the web app with `STT_API_URL` pointing to your dedicated Whisper service
+- The remote Whisper service should provide:
+  - `POST /jobs`
+  - `GET /jobs/{job_id}`
+  - `GET /jobs/{job_id}/artifacts`
+- The first `large-v3` run may stay in `stt.loading_model` while the remote service downloads model weights
 
 ## Suggested Agent Workflow
 

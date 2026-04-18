@@ -4,7 +4,7 @@ A local web app and agent-friendly API for downloading YouTube videos, convertin
 
 - Docker deployment
 - persistent video and transcript storage
-- speech-to-text with `faster-whisper`
+- speech-to-text with a dedicated `faster-whisper` STT service
 - quality selection
 - live download and transcription progress
 - Traditional Chinese, Simplified Chinese, English, and Japanese UI
@@ -24,6 +24,7 @@ A local web app and agent-friendly API for downloading YouTube videos, convertin
 - Switch between YouTube download and local MP4 upload tabs
 - Upload a local MP4 with a custom title
 - Start transcription automatically after upload finishes
+- Support a remote Whisper STT deployment that accepts uploaded MP4 files and returns transcript artifacts
 - See live status while downloading or transcribing
 - Play local MP4 files, open the original YouTube page, and download generated files
 - Generate `txt`, `srt`, `vtt`, and `json` transcript outputs
@@ -117,6 +118,27 @@ Whisper model cache defaults to:
 ./models
 ```
 
+## Remote Whisper STT Deployment
+
+The web app now uploads MP4 files to the STT service and then pulls generated `txt`, `srt`, `vtt`, and `json` artifacts back after the job completes. Shared video storage is no longer required between the web app and the Whisper server.
+
+You can run a standalone x64 + CUDA Whisper server with:
+
+```bash
+docker compose -f docker-composer-whisper.yml up -d --build
+```
+
+Recommended rollout order:
+
+1. Upgrade the remote Whisper server first
+2. Upgrade the main web app second
+
+Important notes:
+
+- point the main app `STT_API_URL` to your remote Whisper host, for example `http://192.168.150.221:19000`
+- the remote Whisper service must expose `POST /jobs`, `GET /jobs/{job_id}`, and `GET /jobs/{job_id}/artifacts`
+- the first `large-v3` job may spend time downloading model weights before transcription begins
+
 ## YouTube Cookies Setup
 
 If YouTube returns messages such as `Sign in to confirm you're not a bot`, export your YouTube cookies in Netscape format and place them here:
@@ -170,6 +192,12 @@ Related docs:
 - Detailed guide: [docs/AGENT_API.md](docs/AGENT_API.md)
 - Tool usage guide: [docs/TOOL_USAGE.md](docs/TOOL_USAGE.md)
 - CLI guide: [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
+
+Transcription flow summary:
+
+- the web app uploads the selected MP4 to the STT service
+- the STT service transcribes remotely
+- after completion, the web app downloads transcript artifacts back into local `transcripts`
 
 ## CLI
 

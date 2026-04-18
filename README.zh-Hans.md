@@ -4,7 +4,7 @@
 
 - Docker 部署
 - MP4 与字幕永久存储
-- `faster-whisper` 转文字
+- 通过独立 `faster-whisper` STT 服务转文字
 - 画质选择
 - 实时下载与转录进度
 - 繁中、简中、英文、日文界面
@@ -30,6 +30,7 @@
 - 可直接在浏览器中编辑生成的 `srt` 字幕
 - 可从视频列表工具栏生成烧录字幕的新 MP4
 - 可自定义烧录字幕的字体、字级、字色、外框、行距、边距与透明背景样式
+- 支持远端 Whisper STT：主站可直接上传 MP4 到 STT 服务，完成后再把字幕产物拉回本地
 - 安装 `ffmpeg` 时可输出合并后的 MP4
 - 可从右上角按钮栏切换语言
 - 可将下载视频、字幕和模型缓存持久化存储在容器外
@@ -118,6 +119,27 @@ Whisper 模型缓存默认放在：
 ./models
 ```
 
+## 远端 Whisper STT 部署
+
+主站现在会把 MP4 直接上传到 STT 服务，并在作业完成后把 `txt`、`srt`、`vtt`、`json` 下载回本地，因此主站与 Whisper Server 不再需要共享视频目录。
+
+如果要在另一台 x64 + CUDA 服务器单独部署 Whisper，可使用：
+
+```bash
+docker compose -f docker-composer-whisper.yml up -d --build
+```
+
+建议更新顺序：
+
+1. 先更新远端 Whisper Server
+2. 再更新主站
+
+注意事项：
+
+- 主站的 `STT_API_URL` 要指向远端 Whisper，例如 `http://192.168.150.221:19000`
+- 远端 Whisper 需要提供 `POST /jobs`、`GET /jobs/{job_id}`、`GET /jobs/{job_id}/artifacts`
+- 第一次执行 `large-v3` 可能会先花时间下载模型，再开始正式转录
+
 ## YouTube Cookies 设置
 
 如果 YouTube 出现 `Sign in to confirm you're not a bot` 之类的消息，请先导出 YouTube cookies 的 Netscape 格式文件，放到：
@@ -171,6 +193,12 @@ Docker 会将这个文件挂载到：
 - 详细说明：[docs/AGENT_API.md](docs/AGENT_API.md)
 - 工具使用说明：[docs/TOOL_USAGE.md](docs/TOOL_USAGE.md)
 - CLI 使用说明：[docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
+
+转录流程摘要：
+
+- 主站会把指定 MP4 上传到 STT 服务
+- STT 服务在远端完成转录
+- 完成后主站会把字幕产物同步回本地 `transcripts`
 
 ## CLI
 

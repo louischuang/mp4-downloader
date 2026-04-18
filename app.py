@@ -2313,7 +2313,11 @@ def build_api_spec() -> dict[str, Any]:
             "/api/v1/transcriptions": {
                 "post": {
                     "tags": ["Transcriptions"],
-                    "summary": "Create a transcription job for an existing MP4",
+                    "summary": "Upload an existing MP4 to the STT service and create a transcription job",
+                    "description": (
+                        "The web app reads the requested local MP4, uploads it to the configured STT service, "
+                        "and then tracks the remote transcription job."
+                    ),
                     "requestBody": {
                         "required": True,
                         "content": {
@@ -2332,7 +2336,7 @@ def build_api_spec() -> dict[str, Any]:
                     },
                     "responses": {
                         "200": {
-                            "description": "Transcription job accepted.",
+                            "description": "Remote transcription job accepted.",
                             "content": {
                                 "application/json": {
                                     "schema": {"$ref": "#/components/schemas/TranscriptionJob"}
@@ -2354,6 +2358,10 @@ def build_api_spec() -> dict[str, Any]:
                 "get": {
                     "tags": ["Transcriptions"],
                     "summary": "Get transcription job status",
+                    "description": (
+                        "When the STT job completes, the web app downloads transcript artifacts from the remote "
+                        "STT service and saves them into the local transcripts directory."
+                    ),
                     "parameters": [
                         {
                             "in": "path",

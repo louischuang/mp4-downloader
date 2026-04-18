@@ -4,7 +4,7 @@
 
 - Docker デプロイ
 - MP4 と字幕の永続保存
-- `faster-whisper` による文字起こし
+- 専用 `faster-whisper` STT サービスによる文字起こし
 - 画質選択
 - ダウンロードと文字起こしのリアルタイム進捗表示
 - 繁体字中国語、簡体字中国語、英語、日本語 UI
@@ -30,6 +30,7 @@
 - 生成された `srt` 字幕をブラウザ上で直接編集可能
 - 動画一覧のツールバーから字幕焼き込み済みの新しい MP4 を生成可能
 - 焼き込み字幕のフォント、サイズ、文字色、縁取り、行間、マージン、半透明背景を細かく調整可能
+- リモート Whisper STT に対応し、Web アプリから MP4 を直接アップロードして字幕成果物を取り戻せる
 - `ffmpeg` が利用可能な場合は MP4 に結合して出力
 - 右上のボタン列から UI 言語を切り替え可能
 - ダウンロード動画、字幕、モデルキャッシュをコンテナ外に永続保存可能
@@ -118,6 +119,27 @@ Whisper モデルキャッシュの既定値：
 ./models
 ```
 
+## リモート Whisper STT のデプロイ
+
+現在の Web アプリは MP4 を STT サービスへ直接アップロードし、ジョブ完了後に `txt`、`srt`、`vtt`、`json` をローカルへ取得します。そのため、Web アプリと Whisper Server が同じ動画ストレージを共有する必要はありません。
+
+x64 + CUDA サーバー上で独立した Whisper を起動するには、次を使います。
+
+```bash
+docker compose -f docker-composer-whisper.yml up -d --build
+```
+
+推奨アップグレード順：
+
+1. 先にリモート Whisper Server を更新
+2. その後でメイン Web アプリを更新
+
+注意点：
+
+- メインアプリの `STT_API_URL` はリモート Whisper へ向けます。例: `http://192.168.150.221:19000`
+- リモート Whisper は `POST /jobs`、`GET /jobs/{job_id}`、`GET /jobs/{job_id}/artifacts` を提供する必要があります
+- 初回の `large-v3` 実行では、文字起こしの前にモデルダウンロードが発生することがあります
+
 ## YouTube Cookies 設定
 
 YouTube で `Sign in to confirm you're not a bot` のようなメッセージが出る場合は、Netscape 形式の cookies をエクスポートして次に配置してください。
@@ -171,6 +193,12 @@ Docker では以下にマウントされます。
 - 詳細ガイド：[docs/AGENT_API.md](docs/AGENT_API.md)
 - ツール利用ガイド：[docs/TOOL_USAGE.md](docs/TOOL_USAGE.md)
 - CLI ガイド：[docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
+
+文字起こしフロー要約：
+
+- Web アプリが対象 MP4 を STT サービスへアップロード
+- STT サービスがリモートで文字起こし
+- 完了後、Web アプリが字幕成果物をローカル `transcripts` へ同期
 
 ## CLI
 

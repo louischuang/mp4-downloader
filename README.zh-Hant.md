@@ -25,10 +25,11 @@
 - 上傳完成後會自動開始進行轉文字
 - 下載時可看到即時進度與狀態文字，完成後只保留完成彈窗
 - 影片列表可播放本機 MP4、開啟原始 YouTube 網址、下載 MP4 或字幕檔
-- 支援本機 `faster-whisper` 轉文字，輸出 `txt`、`srt`、`vtt`、`json`
+- 支援透過獨立 `faster-whisper` STT 服務轉文字，輸出 `txt`、`srt`、`vtt`、`json`
 - 可直接在瀏覽器中編輯產生出的 `srt` 字幕
 - 可從影片列表工具列產生燒錄字幕的新 MP4
 - 可自訂燒錄字幕的字型、字級、字色、外框、行距、邊距與透明背景樣式
+- 支援遠端 Whisper STT：主站可直接上傳 MP4 到 STT 服務，完成後再把字幕產物拉回本地
 - 轉文字進度會顯示在各自影片列內，不與下載進度共用
 - 最新加入的影片會在標題前顯示紅色 `NEW` 標記
 - 安裝 `ffmpeg` 時可輸出合併後的 MP4
@@ -113,6 +114,27 @@ Whisper 模型快取預設會放在：
 ./models
 ```
 
+## 遠端 Whisper STT 部署
+
+主站現在會把 MP4 直接上傳到 STT 服務，並在工作完成後把 `txt`、`srt`、`vtt`、`json` 下載回本地，所以主站與 Whisper Server 不再需要共用影片資料夾。
+
+若要在另一台 x64 + CUDA 伺服器獨立部署 Whisper，可使用：
+
+```bash
+docker compose -f docker-composer-whisper.yml up -d --build
+```
+
+建議更新順序：
+
+1. 先更新遠端 Whisper Server
+2. 再更新主站
+
+注意事項：
+
+- 主站的 `STT_API_URL` 要指向遠端 Whisper，例如 `http://192.168.150.221:19000`
+- 遠端 Whisper 需提供 `POST /jobs`、`GET /jobs/{job_id}`、`GET /jobs/{job_id}/artifacts`
+- 第一次執行 `large-v3` 可能會先花時間下載模型，再開始正式轉錄
+
 ## YouTube Cookies 設定
 
 如果 YouTube 出現 `Sign in to confirm you're not a bot` 之類的訊息，請先匯出 YouTube cookies 的 Netscape 格式檔案，放到：
@@ -166,6 +188,12 @@ Docker 會將這個檔案掛載到：
 - 詳細說明：[docs/AGENT_API.md](docs/AGENT_API.md)
 - 工具使用說明：[docs/TOOL_USAGE.md](docs/TOOL_USAGE.md)
 - CLI 使用說明：[docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
+
+轉錄流程摘要：
+
+- 主站會把指定 MP4 上傳到 STT 服務
+- STT 服務在遠端完成轉錄
+- 完成後主站會把字幕產物同步回本地 `transcripts`
 
 ## CLI
 

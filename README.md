@@ -26,3 +26,4 @@ This project includes:
 - End-to-end API test script at `python3 scripts/e2e_api_test.py`
 - In-browser SRT subtitle editing and subtitle-burned MP4 generation from the video list
 - Burned subtitle styling with configurable font family, size, colors, outline, spacing, margins, and translucent background
+- Remote STT deployment support where the web app uploads MP4 files to Whisper and syncs transcript artifacts back
