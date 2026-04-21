@@ -335,6 +335,7 @@
                 <option value="sans" data-i18n="burn.settings_font_family_sans">{{ translations['zh-Hant']['burn.settings_font_family_sans'] }}</option>
                 <option value="serif" data-i18n="burn.settings_font_family_serif">{{ translations['zh-Hant']['burn.settings_font_family_serif'] }}</option>
                 <option value="mono" data-i18n="burn.settings_font_family_mono">{{ translations['zh-Hant']['burn.settings_font_family_mono'] }}</option>
+                <option value="swei_fan" data-i18n="burn.settings_font_family_swei_fan">{{ translations['zh-Hant']['burn.settings_font_family_swei_fan'] }}</option>
               </select>
             </label>
           </div>
@@ -472,6 +473,7 @@
       const submitTranscribeButton = document.getElementById("submit-transcribe-button");
       const uploadSubmitButton = document.getElementById("upload-submit-button");
       const progressPanel = document.getElementById("progress-panel");
+      const progressKicker = progressPanel?.querySelector(".progress-kicker");
       const progressBar = document.getElementById("progress-bar");
       const progressPercent = document.getElementById("progress-percent");
       const progressStatus = document.getElementById("progress-status");
@@ -567,6 +569,7 @@
       const transcriptionPollers = {};
       const burnStateByFile = {};
       const burnPollers = {};
+      let currentProgressKickerKey = "progress.kicker";
 
       function t(key, fallback = "") {
         return translations[currentLocale]?.[key] || translations[fallbackLocale]?.[key] || fallback || key;
@@ -671,6 +674,9 @@
           updateBurnSliderLabels();
           renderBurnPreview();
         }
+        if (progressKicker) {
+          progressKicker.textContent = t(currentProgressKickerKey, progressKicker.textContent);
+        }
       }
 
       function showError(message) {
@@ -695,6 +701,13 @@
 
       function hideDownloadProgress() {
         progressPanel.classList.add("hidden");
+      }
+
+      function setProgressContext(kickerKey) {
+        currentProgressKickerKey = kickerKey;
+        if (progressKicker) {
+          progressKicker.textContent = t(kickerKey, progressKicker.textContent);
+        }
       }
 
       function setInputTab(tabName) {
@@ -852,7 +865,7 @@
       }
 
       function applyBurnSettingsToForm(settings = {}) {
-        burnSettingsSize.value = settings.size || "zero";
+        burnSettingsSize.value = settings.size || "plus_20";
         burnSettingsFontFamily.value = settings.font_family || "sans";
         burnSettingsTextColor.value = settings.text_color || "#ffffff";
         burnSettingsOutlineColor.value = settings.outline_color || "#000000";
@@ -951,7 +964,9 @@
           ? "\"Noto Serif TC\", \"Noto Serif CJK TC\", serif"
           : burnSettingsFontFamily.value === "mono"
             ? "\"Noto Sans Mono CJK TC\", monospace"
-            : "\"Noto Sans TC\", \"Noto Sans CJK TC\", sans-serif";
+            : burnSettingsFontFamily.value === "swei_fan"
+              ? "\"Swei Fan Sans CJK TC\", \"Noto Sans TC\", \"Noto Sans CJK TC\", sans-serif"
+              : "\"Noto Sans TC\", \"Noto Sans CJK TC\", sans-serif";
         burnPreviewCaption.style.background = burnSettingsBackground.checked
           ? `${burnSettingsBackgroundColor.value}${Math.round((Number(burnSettingsBackgroundOpacity.value) || 0) * 2.55).toString(16).padStart(2, "0")}`
           : "transparent";
@@ -1204,7 +1219,7 @@
         }
       }
 
-      async function pollTranscriptJob(jobId, video) {
+      async function pollTranscriptJob(jobId, video, options = {}) {
         const response = await fetch(`/api/transcriptions/${jobId}`);
         const data = await response.json();
 
@@ -1224,11 +1239,17 @@
           progress: data.progress,
           statusText: translatedStatus || data.status_text,
         });
+        if (options.showGlobalProgress) {
+          updateProgress(data.progress, translatedStatus || data.status_text);
+        }
 
         if (data.status === "completed") {
           submitButton.disabled = false;
           submitTranscribeButton.disabled = false;
           clearTranscriptionState(video.filename);
+          if (options.showGlobalProgress) {
+            hideDownloadProgress();
+          }
           loadVideos();
         }
 
@@ -1236,17 +1257,20 @@
           submitButton.disabled = false;
           submitTranscribeButton.disabled = false;
           clearTranscriptionState(video.filename);
+          if (options.showGlobalProgress) {
+            updateProgress(0, localizeError(data));
+          }
           showTranscriptError(localizeError(data));
         }
 
         return data;
       }
 
-      async function monitorTranscriptJob(jobId, video) {
+      async function monitorTranscriptJob(jobId, video, options = {}) {
         return await new Promise((resolve) => {
           const poll = async () => {
             try {
-              const jobData = await pollTranscriptJob(jobId, video);
+              const jobData = await pollTranscriptJob(jobId, video, options);
               if (jobData.status === "running" || jobData.status === "queued") {
                 transcriptionPollers[video.filename] = setTimeout(poll, 1000);
                 return;
@@ -1257,6 +1281,9 @@
               submitButton.disabled = false;
               submitTranscribeButton.disabled = false;
               uploadSubmitButton.disabled = false;
+              if (options.showGlobalProgress) {
+                updateProgress(0, error.message || t("stt.error.status"));
+              }
               showTranscriptError(error.message || t("stt.error.status"));
               resolve(false);
             }
@@ -1338,6 +1365,39 @@
           };
 
           poll();
+        });
+      }
+
+      function uploadFileWithProgress(url, formData, onProgress) {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", url);
+          xhr.responseType = "json";
+          xhr.upload.addEventListener("progress", (event) => {
+            if (!onProgress) {
+              return;
+            }
+            if (event.lengthComputable && event.total > 0) {
+              onProgress((event.loaded / event.total) * 100);
+              return;
+            }
+            onProgress(0);
+          });
+          xhr.addEventListener("load", () => {
+            let data = xhr.response;
+            if (!data && xhr.responseText) {
+              try {
+                data = JSON.parse(xhr.responseText);
+              } catch (error) {
+                data = { error: xhr.responseText };
+              }
+            }
+            resolve({ status: xhr.status, data: data || {} });
+          });
+          xhr.addEventListener("error", () => {
+            reject(new Error(t("upload.progress_failed")));
+          });
+          xhr.send(formData);
         });
       }
 
@@ -1659,6 +1719,7 @@
         hideError();
         hideTranscriptError();
         closeCompletionModal();
+        setProgressContext("progress.kicker");
         updateProgress(0, t("progress.creating_job"));
         submitButton.disabled = true;
         submitTranscribeButton.disabled = true;
@@ -1712,6 +1773,8 @@
         hideTranscriptError();
         closeCompletionModal();
         uploadSubmitButton.disabled = true;
+        setProgressContext("upload.progress_title");
+        updateProgress(0, t("upload.progress_preparing"));
 
         const uploadTitle = uploadForm.elements.namedItem("title")?.value?.trim();
         const uploadFile = uploadForm.elements.namedItem("file")?.files?.[0];
@@ -1732,14 +1795,14 @@
         payload.append("model", transcriptionModel.value);
 
         try {
-          const response = await fetch("/api/uploads", {
-            method: "POST",
-            body: payload,
+          const { status, data } = await uploadFileWithProgress("/api/uploads", payload, (percent) => {
+            updateProgress(percent, t("upload.progress_uploading"));
           });
-          const data = await response.json();
-          if (!response.ok) {
+          if (status < 200 || status >= 300) {
+            updateProgress(0, localizeError(data));
             throw new Error(localizeError(data));
           }
+          updateProgress(100, t("upload.progress_uploaded"));
 
           await loadVideos();
           const targetVideo = currentVideos.find((video) => video.filename === data.filename) || {
@@ -1756,10 +1819,17 @@
           setInputTab("youtube");
 
           if (data.transcription_job_id) {
-            await monitorTranscriptJob(data.transcription_job_id, targetVideo);
-            openCompletionModal("modal.completed_download_transcribe");
+            setProgressContext("stt.progress_title");
+            updateProgress(0, t("stt.queued"));
+            const completed = await monitorTranscriptJob(data.transcription_job_id, targetVideo, { showGlobalProgress: true });
+            if (completed) {
+              openCompletionModal("modal.completed_download_transcribe");
+            }
+          } else {
+            hideDownloadProgress();
           }
         } catch (error) {
+          updateProgress(0, error.message || t("upload.progress_failed"));
           showError(error.message || t("stt.error.start"));
         } finally {
           uploadSubmitButton.disabled = false;

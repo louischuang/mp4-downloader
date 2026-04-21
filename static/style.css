@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Swei Fan Sans CJK TC";
+  src:
+    url("https://cdn.jsdelivr.net/gh/max32002/swei-fan-sans@2.140/WebFont/CJK%20TC/SweiFanSansCJKtc-Regular.woff2") format("woff2"),
+    url("https://cdn.jsdelivr.net/gh/max32002/swei-fan-sans@2.140/WebFont/CJK%20TC/SweiFanSansCJKtc-Regular.woff") format("woff");
+  font-display: swap;
+}
+
 :root {
   --bg: #07111f;
   --bg-deep: #030813;

@@ -15,13 +15,20 @@ RUN apt-get update \
         ffmpeg \
         nodejs \
         npm \
+        git \
         fonts-noto-cjk \
         fontconfig \
         build-essential \
         zlib1g-dev \
         libjpeg62-turbo-dev \
         libfreetype6-dev \
+    && git clone --depth 1 https://github.com/max32002/swei-fan-sans.git /tmp/swei-fan-sans \
+    && mkdir -p /usr/local/share/fonts/swei-fan-sans \
+    && regular_font="$(find /tmp/swei-fan-sans -type f -name 'SweiFanSansCJKtc-Regular.ttf' | head -n 1)" \
+    && test -n "$regular_font" \
+    && cp "$regular_font" /usr/local/share/fonts/swei-fan-sans/ \
     && fc-cache -f \
+    && rm -rf /tmp/swei-fan-sans \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
